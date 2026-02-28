@@ -10,6 +10,7 @@ interface Props {
     citizens: Citizen[];
     result?: SimulationResult;
     clusterAssignments?: { citizenId: string, clusterIndex: number }[];
+    onNodeClick?: (citizenData: any) => void;
 }
 
 // Colors
@@ -17,7 +18,7 @@ const SUPPORT_COLOR = new THREE.Color("#10b981"); // Emerald 500
 const OPPOSE_COLOR = new THREE.Color("#ef4444"); // Red 500
 const NEUTRAL_COLOR = new THREE.Color("#64748b"); // Slate 500
 
-function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignments, viewMode }: { citizens: Citizen[], result?: SimulationResult, setHoveredCitizen: (c: any) => void, isPaused: boolean, clusterAssignments?: { citizenId: string, clusterIndex: number }[], viewMode: 'vote' | 'faction' }) {
+function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignments, viewMode, onNodeClick }: { citizens: Citizen[], result?: SimulationResult, setHoveredCitizen: (c: any) => void, isPaused: boolean, clusterAssignments?: { citizenId: string, clusterIndex: number }[], viewMode: 'vote' | 'faction', onNodeClick?: (c: any) => void }) {
     const groupRef = useRef<THREE.Group>(null);
 
     // Slowly rotate the entire scatter plot for a premium dynamic feel
@@ -76,6 +77,7 @@ function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignmen
                     position={node.position}
                     onPointerOver={(e) => { e.stopPropagation(); setHoveredCitizen(node); document.body.style.cursor = 'pointer'; }}
                     onPointerOut={() => { setHoveredCitizen(null); document.body.style.cursor = 'auto'; }}
+                    onPointerUp={(e) => { e.stopPropagation(); if (onNodeClick) onNodeClick(node); }}
                 >
                     <sphereGeometry args={[0.2, 16, 16]} />
                     <meshStandardMaterial
@@ -99,7 +101,7 @@ function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignmen
     );
 }
 
-export default function IdeologyScatter({ citizens, result, clusterAssignments }: Props) {
+export default function IdeologyScatter({ citizens, result, clusterAssignments, onNodeClick }: Props) {
     const [hoveredNode, setHoveredNode] = useState<any>(null);
     const [isPaused, setIsPaused] = useState(false);
     const [preferredView, setPreferredView] = useState<'vote' | 'faction'>('faction');
@@ -185,7 +187,7 @@ export default function IdeologyScatter({ citizens, result, clusterAssignments }
                 <directionalLight position={[10, 10, 5]} intensity={1} />
                 <pointLight position={[-10, -10, -10]} intensity={0.5} color="#475569" />
 
-                <Scene citizens={citizens} result={result} setHoveredCitizen={setHoveredNode} isPaused={isPaused} clusterAssignments={clusterAssignments} viewMode={viewMode} />
+                <Scene citizens={citizens} result={result} setHoveredCitizen={setHoveredNode} isPaused={isPaused} clusterAssignments={clusterAssignments} viewMode={viewMode} onNodeClick={onNodeClick} />
 
                 <OrbitControls
                     enableDamping

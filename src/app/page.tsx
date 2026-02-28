@@ -7,6 +7,7 @@ import IdeologyScatter from "@/components/visualization/IdeologyScatter";
 import { Loader2, Users, TrendingUp, CheckCircle, XCircle, Download, Upload, Trash2, Cloud, CloudDownload, LogOut, LogIn } from "lucide-react";
 import { MOCK_CITIZENS } from "@/lib/simulation/mockData";
 import { useUser } from '@auth0/nextjs-auth0/client';
+import ChatModal from "@/components/chat/ChatModal";
 
 // ── Design tokens (light mode) ──────────────────────────────────────────────
 const T = {
@@ -43,6 +44,7 @@ export default function Home() {
   const [isLoadingDB, setIsLoadingDB] = useState(false);
   const [savedElectorates, setSavedElectorates] = useState<any[]>([]);
   const [showLoadModal, setShowLoadModal] = useState(false);
+  const [selectedCitizenData, setSelectedCitizenData] = useState<any>(null);
 
   const [isClustering, setIsClustering] = useState(false);
   const [factions, setFactions] = useState<{ clusterIndex: number, name: string, description: string }[]>([]);
@@ -365,7 +367,7 @@ export default function Home() {
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: T.textFaint, letterSpacing: '0.05em' }}>left click to rotate · scroll to zoom</span>
             </div>
             <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 6, height: 500, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-              <IdeologyScatter citizens={citizens} result={result || undefined} clusterAssignments={clusterAssignments} />
+              <IdeologyScatter citizens={citizens} result={result || undefined} clusterAssignments={clusterAssignments} onNodeClick={setSelectedCitizenData} />
             </div>
           </section>
 
@@ -450,6 +452,16 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* ── Chat Modal ──────────────────────────────────────────────────── */}
+      {selectedCitizenData && (
+        <ChatModal
+          citizenData={selectedCitizenData}
+          policy={{ title: "Current Proposal", description: policyText, vector: [] as any, universal_appeal: 0 }}
+          onClose={() => setSelectedCitizenData(null)}
+        />
+      )}
+
     </main>
   );
 }
