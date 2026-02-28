@@ -1,0 +1,101 @@
+id,age_group,education,income_bracket,employment,party_affiliation
+1,18-24,High School,Under30K,Student,Independent
+2,25-34,Some College,30-50K,Employed,Democrat
+3,35-44,Bachelor’s,50-75K,Employed,Republican
+4,45-54,Postgraduate,75-100K,Self-Employed,Independent
+5,55-64,High School,30-50K,Employed,Democrat
+6,65+,Bachelor’s,50-75K,Retired,Republican
+7,18-24,Some College,Under30K,Employed,Democrat
+8,25-34,Bachelor’s,75-100K,Employed,Independent
+9,35-44,High School,30-50K,Employed,Republican
+10,45-54,Postgraduate,100K+,Self-Employed,Democrat
+11,55-64,Some College,50-75K,Employed,Republican
+12,65+,High School,Under30K,Retired,Independent
+13,18-24,Bachelor’s,30-50K,Student,Democrat
+14,25-34,Postgraduate,100K+,Employed,Republican
+15,35-44,High School,Under30K,Employed,Independent
+16,45-54,Some College,50-75K,Employed,Democrat
+17,55-64,Bachelor’s,75-100K,Employed,Republican
+18,65+,Postgraduate,100K+,Retired,Independent
+19,18-24,High School,Under30K,Student,Republican
+20,25-34,Some College,30-50K,Employed,Democrat
+21,35-44,Bachelor’s,50-75K,Employed,Independent
+22,45-54,High School,30-50K,Employed,Republican
+23,55-64,Some College,50-75K,Employed,Democrat
+24,65+,Bachelor’s,75-100K,Retired,Independent
+25,18-24,Bachelor’s,Under30K,Student,Democrat
+26,25-34,Postgraduate,100K+,Employed,Republican
+27,35-44,Some College,30-50K,Employed,Independent
+28,45-54,Bachelor’s,75-100K,Employed,Democrat
+29,55-64,High School,Under30K,Employed,Republican
+30,65+,Some College,50-75K,Retired,Independent
+31,18-24,High School,Under30K,Student,Independent
+32,25-34,Some College,30-50K,Employed,Democrat
+33,35-44,Bachelor’s,50-75K,Employed,Republican
+34,45-54,Postgraduate,75-100K,Self-Employed,Independent
+35,55-64,High School,30-50K,Employed,Democrat
+36,65+,Bachelor’s,50-75K,Retired,Republican
+37,18-24,Some College,Under30K,Employed,Democrat
+38,25-34,Bachelor’s,75-100K,Employed,Independent
+39,35-44,High School,30-50K,Employed,Republican
+40,45-54,Postgraduate,100K+,Self-Employed,Democrat
+41,55-64,Some College,50-75K,Employed,Republican
+42,65+,High School,Under30K,Retired,Independent
+43,18-24,Bachelor’s,30-50K,Student,Democrat
+44,25-34,Postgraduate,100K+,Employed,Republican
+45,35-44,High School,Under30K,Employed,Independent
+46,45-54,Some College,50-75K,Employed,Democrat
+47,55-64,Bachelor’s,75-100K,Employed,Republican
+48,65+,Postgraduate,100K+,Retired,Independent
+49,18-24,High School,Under30K,Student,Republican
+50,25-34,Some College,30-50K,Employed,Democrat
+51,35-44,Bachelor’s,50-75K,Employed,Independent
+52,45-54,High School,30-50K,Employed,Republican
+53,55-64,Some College,50-75K,Employed,Democrat
+54,65+,Bachelor’s,75-100K,Retired,Independent
+55,18-24,Bachelor’s,Under30K,Student,Democrat
+56,25-34,Postgraduate,100K+,Employed,Republican
+57,35-44,Some College,30-50K,Employed,Independent
+58,45-54,Bachelor’s,75-100K,Employed,Democrat
+59,55-64,High School,Under30K,Employed,Republican
+60,65+,Some College,50-75K,Retired,Independent
+61,18-24,High School,Under30K,Student,Independent
+62,25-34,Some College,30-50K,Employed,Democrat
+63,35-44,Bachelor’s,50-75K,Employed,Republican
+64,45-54,Postgraduate,75-100K,Self-Employed,Independent
+65,55-64,High School,30-50K,Employed,Democrat
+66,65+,Bachelor’s,50-75K,Retired,Republican
+67,18-24,Some College,Under30K,Employed,Democrat
+68,25-34,Bachelor’s,75-100K,Employed,Independent
+69,35-44,High School,30-50K,Employed,Republican
+70,45-54,Postgraduate,100K+,Self-Employed,Democrat
+71,55-64,Some College,50-75K,Employed,Republican
+72,65+,High School,Under30K,Retired,Independent
+73,18-24,Bachelor’s,30-50K,Student,Democrat
+74,25-34,Postgraduate,100K+,Employed,Republican
+75,35-44,Some College,30-50K,Employed,Independent
+76,45-54,Bachelor’s,75-100K,Employed,Democrat
+77,55-64,High School,Under30K,Employed,Republican
+78,65+,Some College,50-75K,Retired,Independent
+79,18-24,High School,Under30K,Student,Democrat
+80,25-34,Some College,30-50K,Employed,Republican
+81,35-44,Bachelor’s,50-75K,Employed,Independent
+82,45-54,High School,30-50K,Employed,Democrat
+83,55-64,Some College,50-75K,Employed,Republican
+84,65+,Bachelor’s,75-100K,Retired,Independent
+85,18-24,Some College,Under30K,Student,Democrat
+86,25-34,Bachelor’s,75-100K,Employed,Republican
+87,35-44,High School,30-50K,Employed,Independent
+88,45-54,Postgraduate,100K+,Self-Employed,Democrat
+89,55-64,Some College,50-75K,Employed,Republican
+90,65+,High School,Under30K,Retired,Independent
+91,18-24,Bachelor’s,Under30K,Student,Democrat
+92,25-34,Some College,30-50K,Employed,Republican
+93,35-44,Bachelor’s,50-75K,Employed,Independent
+94,45-54,High School,30-50K,Employed,Democrat
+95,55-64,Some College,50-75K,Employed,Republican
+96,65+,Bachelor’s,75-100K,Retired,Independent
+97,18-24,High School,Under30K,Student,Democrat
+98,25-34,Some College,30-50K,Employed,Republican
+99,35-44,Bachelor’s,50-75K,Employed,Independent
+100,45-54,Postgraduate,100K+,Self-Employed,Democrat
