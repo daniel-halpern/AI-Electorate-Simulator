@@ -21,18 +21,24 @@ export default function ChatModal({ citizenData, policy, onClose }: ChatModalPro
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Initial greeting based on their vote
-    // Initial greeting based on their vote
     useEffect(() => {
-        let voteStr = "";
-        if (!voteRecord.didVote) {
-            voteStr = "abstained from voting on";
+        let text = "";
+
+        if (!voteRecord) {
+            text = `Hi, I'm ${citizen.name}. I haven't made up my mind yet about the "${policy.title}" proposal. What do you want to ask me?`;
         } else {
-            voteStr = voteRecord.vote ? "voted in favor of" : "opposed";
+            let voteStr = "";
+            if (!voteRecord.didVote) {
+                voteStr = "abstained from voting on";
+            } else {
+                voteStr = voteRecord.vote ? "voted in favor of" : "opposed";
+            }
+            text = `Hi, I'm ${citizen.name}. I ${voteStr} the "${policy.title}" proposal. What do you want to ask me?`;
         }
 
         setMessages([{
             role: 'model',
-            text: `Hi, I'm ${citizen.name}. I ${voteStr} the "${policy.title}" proposal. What do you want to ask me?`
+            text
         }]);
     }, [citizen, policy, voteRecord]);
 
@@ -115,7 +121,12 @@ export default function ChatModal({ citizenData, policy, onClose }: ChatModalPro
                     <div>
                         <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 16, color: 'hsl(25 15% 12%)', margin: '0 0 2px 0' }}>{citizen.name}</h2>
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'hsl(25 8% 45%)', letterSpacing: '0.05em' }}>
-                            {citizen.age} yrs · {voteRecord.vote ? <span style={{ color: 'hsl(142 45% 36%)' }}>Voted Yes</span> : <span style={{ color: 'hsl(0 60% 48%)' }}>Voted No</span>}
+                            {citizen.age} yrs · {voteRecord ? (
+                                !voteRecord.didVote ? <span style={{ color: 'hsl(25 8% 45%)', fontStyle: 'italic' }}>Abstained</span> :
+                                    voteRecord.vote ? <span style={{ color: 'hsl(142 45% 36%)' }}>Voted Yes</span> : <span style={{ color: 'hsl(0 60% 48%)' }}>Voted No</span>
+                            ) : (
+                                <span style={{ color: 'hsl(30 15% 65%)', fontStyle: 'italic' }}>Undecided</span>
+                            )}
                         </div>
                     </div>
                     <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'hsl(25 8% 45%)', padding: 4, borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>

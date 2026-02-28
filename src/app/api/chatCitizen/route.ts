@@ -19,16 +19,23 @@ export async function POST(req: Request) {
         // Identify their vote and map it to text
         let voteStr = "";
         let instructionsStr = "";
-        if (!citizen.voteRecord.didVote) {
+        let probabilityStr = "N/A";
+        let turnoutStr = "N/A";
+
+        if (!citizen.voteRecord) {
+            voteStr = "UNDECIDED";
+            instructionsStr = "2. Discuss the policy open-mindedly. You have not voted yet and are still making up your mind based on your worldview.";
+        } else if (!citizen.voteRecord.didVote) {
             voteStr = "DID NOT VOTE (ABSTAINED)";
             instructionsStr = `2. Defend your apathy or decision to abstain (${voteStr}) based on your worldview. You probably didn't vote because you are moderate, don't care, or the policy doesn't affect you enough to matter.`;
+            probabilityStr = (citizen.voteRecord.supportProbability * 100).toFixed(1);
+            turnoutStr = (citizen.voteRecord.turnoutProbability * 100).toFixed(1);
         } else {
             voteStr = citizen.voteRecord.vote ? "IN FAVOR" : "OPPOSED";
             instructionsStr = `2. Defend your specific vote (${voteStr}) passionately based on your specific worldview and ideological numbers.`;
+            probabilityStr = (citizen.voteRecord.supportProbability * 100).toFixed(1);
+            turnoutStr = (citizen.voteRecord.turnoutProbability * 100).toFixed(1);
         }
-
-        const probabilityStr = (citizen.voteRecord.supportProbability * 100).toFixed(1);
-        const turnoutStr = (citizen.voteRecord.turnoutProbability * 100).toFixed(1);
 
         const systemPrompt = `You are roleplaying as an American citizen in a political simulation.
 YOUR PROFILE:
@@ -49,7 +56,7 @@ THE POLICY CURRENTLY BEING DEBATED:
 
 YOUR STANCE ON THIS POLICY:
 You voted: ${voteStr}. 
-(Math Context: You had a ${probabilityStr}% ideological match, and a ${turnoutStr}% probability of actually voting).
+${citizen.voteRecord ? `(Math Context: You had a ${probabilityStr}% ideological match, and a ${turnoutStr}% probability of actually voting).` : '(Math Context: The simulation has not run yet. You are undecided).'}
 
 RULES FOR YOUR RESPONSES:
 1. Speak exclusively in character. Never acknowledge you are an AI.
