@@ -25,19 +25,18 @@ export function euclideanDistance(a: IdeologyVector, b: IdeologyVector): number 
 
 // 2. Voting Probability
 // supportProbability = sigmoid(-alpha * distance)
-// Where alpha controls ideological rigidity (higher = more rigid/less likely to vote for distant policies)
-export function calculateSupportProbability(distance: number, alpha: number = 2.0): number {
-    // If distance is 0, e^0 is 1. 1/(1+1) = 0.5. 
-    // Wait, if distance is 0, probability should be near 1.0. 
-    // Standard sigmoid is 1 / (1 + e^-x). 
-    // To map distance (0 to max) to probability (1 down to 0):
-    // Let's use:
+export function calculateSupportProbability(distance: number, alpha: number = 2.5): number {
+    // In a 6D space where most axes are [-1, 1] or [0, 1],
+    // The maximum possible distance is roughly ~3.46.
+    // The average distance between two random points is around ~1.2 to 1.5.
 
     // A tuned modified sigmoid mapping a positive distance to a 1.0 to 0.0 scale:
-    // When distance = 0, we want high probability.
-    // So we offset the sigmoid center, e.g., shift right by ~0.8 (the inflection point)
+    // If distance is near 0, probability should be very near 100%.
+    // If distance is around the average (1.2), they should be somewhat neutral but leaning "no".
 
-    const inflectionPoint = 0.8;
+    // We set the inflection point (exactly 50% chance of voting yes/no) to 1.6.
+    // This allows universally good policies to naturally gain a super-majority.
+    const inflectionPoint = 1.6;
     const x = -alpha * (distance - inflectionPoint);
     return 1 / (1 + Math.exp(-x));
 }
