@@ -6,7 +6,7 @@ export const maxDuration = 60; // seconds
 
 export async function POST(req: Request) {
     try {
-        const { count = 50 } = await req.json();
+        const { count = 50, demographics = "" } = await req.json();
 
         if (!process.env.GEMINI_API_KEY) {
             return NextResponse.json(
@@ -53,13 +53,19 @@ export async function POST(req: Request) {
             required: ["citizens"]
         };
 
+        // Generate in a single request to avoid 429 Too Many Requests on Free Tier
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: `You are generating the initial population for a governance simulation. Generating exactly ${count} distinctly diverse citizens. Make sure to cover the absolute extremes of the political spectrum as well as the moderate center. Generate unique UUIDs for 'id'.`,
+            contents: `You are generating exactly ${count} distinctly diverse citizens for a governance simulation.
+${demographics ? `CRITICAL CONTEXT: The generated citizens MUST accurately reflect the following real-world demographic data or profile: "${demographics}". Their ideological vectors, age, and worldviews should be heavily weighted to match this specific demographic breakdown.` : 'Make sure to cover the absolute extremes of the political spectrum as well as the moderate center.'}
+CRITICAL: All numerical values MUST strictly adhere to their specified ranges.
+- economic, social: precisely between -1.0 and 1.0
+- environmental, authority_preference, collectivism, risk_tolerance: precisely between 0.0 and 1.0
+Do not exceed these bounds even slightly (e.g., no 1.01).`,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: citizenListGenSchema,
-                temperature: 0.9, // High temp to ensure high variance in the generated population
+                temperature: 0.4,
             }
         });
 
@@ -71,10 +77,20 @@ export async function POST(req: Request) {
         const rawData = JSON.parse(resultText);
         const validatedData = citizensListSchema.parse(rawData);
 
-        return NextResponse.json({ citizens: validatedData.citizens });
+        // Return exactly the requested count
+        return NextResponse.json({ citizens: validatedData.citizens.slice(0, count) });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Agent generation error:", error);
+
+        // Handle Gemini 429 Too Many Requests
+        if (error?.status === 429 || error?.message?.includes("429") || error?.message?.includes("Quota exceeded")) {
+            return NextResponse.json(
+                { error: "Google Gemini free tier limit reached! Please wait 60 seconds before generating more agents." },
+                { status: 429 }
+            );
+        }
+
         return NextResponse.json(
             { error: "Failed to generate agents" },
             { status: 500 }

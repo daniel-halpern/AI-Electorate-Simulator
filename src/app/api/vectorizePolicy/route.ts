@@ -87,8 +87,17 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ vector: validatedVector });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Vectorization error:", error);
+
+        // Handle Gemini 429 Too Many Requests
+        if (error?.status === 429 || error?.message?.includes("429") || error?.message?.includes("Quota exceeded")) {
+            return NextResponse.json(
+                { error: "Google Gemini free tier limit reached! Please wait 60 seconds before running another simulation." },
+                { status: 429 }
+            );
+        }
+
         return NextResponse.json(
             { error: "Failed to vectorize policy" },
             { status: 500 }

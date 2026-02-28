@@ -10,7 +10,7 @@ import { MOCK_CITIZENS } from "@/lib/simulation/mockData";
 export default function Home() {
   const [citizens, setCitizens] = useState<Citizen[]>([]);
   const [isGeneratingAgents, setIsGeneratingAgents] = useState(false);
-
+  const [demographics, setDemographics] = useState("");
   const [policyText, setPolicyText] = useState("");
   const [isSimulating, setIsSimulating] = useState(false);
   const [result, setResult] = useState<SimulationResult | null>(null);
@@ -27,15 +27,22 @@ export default function Home() {
       const res = await fetch("/api/generateAgents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: 50 })
+        body: JSON.stringify({ count: 30, demographics }) // Requesting 30 at a time to stay well under the Vercel 60s Edge timeout
       });
 
       const data = await res.json();
       if (data.error) {
         alert("Error generating agents: " + data.error);
       } else {
-        // Replace mock with real AI generated ones
-        setCitizens(data.citizens);
+        // Append the new real AI citizens to the existing electorate!
+        // If it's currently filled with the 100 mock citizens, we'll replace the first time.
+        setCitizens(prev => {
+          // Sneaky trick: if the first citizen has the mock name, clear the mock array.
+          if (prev.length > 0 && prev[0].name === "Marcus Vance") {
+            return data.citizens;
+          }
+          return [...data.citizens, ...prev];
+        });
       }
     } catch (err) {
       console.error(err);
@@ -95,6 +102,16 @@ export default function Home() {
 
             {/* Agent Control */}
             <div className="mt-8 pt-8 border-t border-slate-800">
+              <div className="flex flex-col gap-3 mb-4">
+                <label className="text-xs text-slate-400 font-medium tracking-wide uppercase">Real-World Demographics (Optional RAG)</label>
+                <textarea
+                  value={demographics}
+                  onChange={(e) => setDemographics(e.target.value)}
+                  placeholder="e.g. 50% union workers in Ohio, 20% college students, 30% wealthy suburbanites..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none h-20 placeholder:text-slate-600"
+                />
+              </div>
+
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-semibold flex items-center gap-2">
                   <Users className="w-4 h-4 text-emerald-400" />
@@ -106,7 +123,7 @@ export default function Home() {
                 disabled={isGeneratingAgents}
                 className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 border border-slate-700"
               >
-                {isGeneratingAgents ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate New AI Electorate"}
+                {isGeneratingAgents ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add 30 AI Personas"}
               </button>
             </div>
           </div>

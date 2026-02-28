@@ -1,140 +1,158 @@
 "use client";
 
-import { useMemo } from "react";
-import {
-    ScatterChart,
-    Scatter,
-    XAxis,
-    YAxis,
-    ZAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Cell
-} from "recharts";
+import { useMemo, useRef, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, Text } from "@react-three/drei";
+import * as THREE from "three";
 import { SimulationResult, Citizen } from "@/types/ideology";
-
 
 interface Props {
     citizens: Citizen[];
     result?: SimulationResult;
 }
 
-export default function IdeologyScatter({ citizens, result }: Props) {
-    // Map our 6D space to 2D. 
-    // For a fast hackathon MVP without bringing in complex matrix math libraries, 
-    // we can map the 2 most polarizing axes (Economic and Social) directly as proxies for PCA components,
-    // OR we can do a quick weighted sum mapping.
-    // We'll map X = Economic, Y = Social for the raw un-simulated view to give the user immediate visual grounding.
+// Colors
+const SUPPORT_COLOR = new THREE.Color("#10b981"); // Emerald 500
+const OPPOSE_COLOR = new THREE.Color("#ef4444"); // Red 500
+const NEUTRAL_COLOR = new THREE.Color("#64748b"); // Slate 500
+
+function Scene({ citizens, result, setHoveredCitizen }: { citizens: Citizen[], result?: SimulationResult, setHoveredCitizen: (c: any) => void }) {
+    const groupRef = useRef<THREE.Group>(null);
+
+    // Slowly rotate the entire scatter plot for a premium dynamic feel
+    useFrame((state, delta) => {
+        if (groupRef.current) {
+            groupRef.current.rotation.y += delta * 0.1;
+        }
+    });
 
     const data = useMemo(() => {
-        return citizens.map(c => {
-            // Find what this citizen voted if a simulation has run
+        return citizens.map((c, i) => {
             const voteRecord = result?.votes.find(v => v.citizenId === c.id);
+            // Map axes: X = Economic, Y = Social, Z = Authority
+            // Scale up by 5 for a wider visual distribution
+            const SCALE = 5;
+            const position = new THREE.Vector3(
+                c.ideology.economic * SCALE,
+                c.ideology.social * SCALE,
+                (c.ideology.authority_preference * 2 - 1) * SCALE // map 0-1 to -1 to 1
+            );
 
-            // We are plotting Economic (-1 left to 1 right) on X axis
-            // We are plotting Social (-1 prog to 1 cons) on Y axis
+            let color = NEUTRAL_COLOR;
+            if (voteRecord) {
+                color = voteRecord.vote ? SUPPORT_COLOR : OPPOSE_COLOR;
+            }
+
             return {
                 id: c.id,
-                name: c.name,
-                x: c.ideology.economic,
-                y: c.ideology.social,
-                vote: voteRecord?.vote,
-                prob: voteRecord?.supportProbability,
-                z: 100 // size of the dot
+                position,
+                color,
+                citizen: c,
+                voteRecord
             };
         });
     }, [citizens, result]);
 
-    // Colors
-    const SUPPORT_COLOR = "#10b981"; // Emerald 500
-    const OPPOSE_COLOR = "#ef4444"; // Red 500
-    const NEUTRAL_COLOR = "#64748b"; // Slate 500
+    return (
+        <group ref={groupRef}>
+            {/* Draw Axes Limits */}
+            <axesHelper args={[6]} />
 
-    // Custom Tooltip
-    const CustomTooltip = ({ active, payload }: any) => {
-        if (active && payload && payload.length) {
-            const data = payload[0].payload;
-            return (
-                <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl text-sm">
-                    <p className="font-bold text-white">{data.name}</p>
-                    <div className="flex justify-between items-center mt-2 gap-4">
+            {/* Render all nodes */}
+            {data.map((node) => (
+                <mesh
+                    key={node.id}
+                    position={node.position}
+                    onPointerOver={(e) => { e.stopPropagation(); setHoveredCitizen(node); document.body.style.cursor = 'pointer'; }}
+                    onPointerOut={() => { setHoveredCitizen(null); document.body.style.cursor = 'auto'; }}
+                >
+                    <sphereGeometry args={[0.2, 16, 16]} />
+                    <meshStandardMaterial
+                        color={node.color}
+                        emissive={node.color}
+                        emissiveIntensity={0.5}
+                        roughness={0.2}
+                        metalness={0.8}
+                    />
+                </mesh>
+            ))}
+
+            {/* Axis Labels */}
+            <Text position={[6.5, 0, 0]} fontSize={0.3} color="#94a3b8" anchorX="left">Economic (Right)</Text>
+            <Text position={[-6.5, 0, 0]} fontSize={0.3} color="#94a3b8" anchorX="right">Economic (Left)</Text>
+            <Text position={[0, 6.5, 0]} fontSize={0.3} color="#94a3b8" anchorY="bottom">Social (Cons)</Text>
+            <Text position={[0, -6.5, 0]} fontSize={0.3} color="#94a3b8" anchorY="top">Social (Prog)</Text>
+            <Text position={[0, 0, 6.5]} fontSize={0.3} color="#94a3b8" anchorX="center">Authority (Statist)</Text>
+            <Text position={[0, 0, -6.5]} fontSize={0.3} color="#94a3b8" anchorX="center">Authority (Liberty)</Text>
+        </group>
+    );
+}
+
+export default function IdeologyScatter({ citizens, result }: Props) {
+    const [hoveredNode, setHoveredNode] = useState<any>(null);
+
+    return (
+        <div className="w-full h-full bg-slate-950/50 rounded-xl border border-slate-800 relative overflow-hidden backdrop-blur-sm shadow-2xl">
+            <div className="absolute top-4 left-4 text-xs text-slate-500 font-medium tracking-widest uppercase z-10">
+                3D Ideological Space
+                <div className="text-[10px] lowercase text-slate-600 mt-1">Left click to rotate. Scroll to zoom.</div>
+            </div>
+
+            {/* Custom UI Tooltip overlaying the canvas */}
+            {hoveredNode && (
+                <div
+                    className="absolute top-4 right-4 bg-slate-900 border border-slate-700 p-4 rounded-xl shadow-2xl text-sm z-20 w-72 pointer-events-none transition-opacity"
+                >
+                    <p className="font-bold text-white mb-1">{hoveredNode.citizen.name}</p>
+                    <div className="flex justify-between items-center text-xs mb-1">
                         <span className="text-slate-400">Economic:</span>
-                        <span className="text-white font-mono">{data.x.toFixed(2)}</span>
+                        <span className="text-emerald-400 font-mono">{hoveredNode.citizen.ideology.economic.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between items-center gap-4">
+                    <div className="flex justify-between items-center text-xs mb-1">
                         <span className="text-slate-400">Social:</span>
-                        <span className="text-white font-mono">{data.y.toFixed(2)}</span>
+                        <span className="text-blue-400 font-mono">{hoveredNode.citizen.ideology.social.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-400">Authority:</span>
+                        <span className="text-purple-400 font-mono">{hoveredNode.citizen.ideology.authority_preference.toFixed(2)}</span>
                     </div>
 
-                    {data.vote !== undefined && (
-                        <div className="mt-2 pt-2 border-t border-slate-700">
+                    <p className="text-xs text-slate-400 mt-3 italic leading-relaxed border-t border-slate-800 pt-3">
+                        "{hoveredNode.citizen.worldview}"
+                    </p>
+
+                    {hoveredNode.voteRecord && (
+                        <div className="mt-3 pt-3 border-t border-slate-700 bg-slate-950/50 -mx-4 -mb-4 p-4 rounded-b-xl">
                             <div className="flex justify-between items-center font-bold">
                                 <span className="text-slate-400 font-normal">Vote:</span>
-                                <span className={data.vote ? "text-emerald-400" : "text-red-400"}>
-                                    {data.vote ? "SUPPORT" : "OPPOSE"}
+                                <span className={hoveredNode.voteRecord.vote ? "text-emerald-400" : "text-red-400"}>
+                                    {hoveredNode.voteRecord.vote ? "SUPPORT" : "OPPOSE"}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center text-xs mt-1">
                                 <span className="text-slate-500">Probability:</span>
-                                <span className="text-slate-300">{(data.prob * 100).toFixed(1)}%</span>
+                                <span className="text-slate-300">{(hoveredNode.voteRecord.supportProbability * 100).toFixed(1)}%</span>
                             </div>
                         </div>
                     )}
                 </div>
-            );
-        }
-        return null;
-    };
+            )}
 
-    return (
-        <div className="w-full h-full bg-slate-950/50 rounded-xl border border-slate-800 p-4 relative overflow-hidden backdrop-blur-sm">
-            <div className="absolute top-4 left-4 text-xs text-slate-500 font-medium tracking-widest uppercase">
-                Ideological Space (Eco/Soc)
-            </div>
+            <Canvas camera={{ position: [8, 8, 12], fov: 50 }} className="cursor-crosshair w-full h-full">
+                <color attach="background" args={["#020617"]} /> {/* slate-950 */}
+                <ambientLight intensity={0.5} />
+                <directionalLight position={[10, 10, 5]} intensity={1} />
+                <pointLight position={[-10, -10, -10]} intensity={0.5} color="#475569" />
 
-            {/* Quadrant labels for aesthetic flavor */}
-            <div className="absolute top-4 right-8 text-[10px] text-slate-600 font-bold uppercase rotate-90 origin-right">Right / Capitalist →</div>
-            <div className="absolute bottom-4 left-8 text-[10px] text-slate-600 font-bold uppercase tracking-widest">← Progressive / Left</div>
+                <Scene citizens={citizens} result={result} setHoveredCitizen={setHoveredNode} />
 
-            <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
-                    <XAxis
-                        type="number"
-                        dataKey="x"
-                        name="Economic"
-                        domain={[-1.1, 1.1]}
-                        tick={{ fill: '#64748b', fontSize: 12 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#475569' }}
-                    />
-                    <YAxis
-                        type="number"
-                        dataKey="y"
-                        name="Social"
-                        domain={[-1.1, 1.1]}
-                        tick={{ fill: '#64748b', fontSize: 12 }}
-                        tickLine={false}
-                        axisLine={{ stroke: '#475569' }}
-                    />
-                    <ZAxis type="number" dataKey="z" range={[40, 40]} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#cbd5e1', strokeWidth: 1 }} />
-                    <Scatter name="Electorate" data={data} fill="#8884d8" shape="circle">
-                        {data.map((entry, index) => (
-                            <Cell
-                                key={`cell-${index}`}
-                                fill={entry.vote === undefined ? NEUTRAL_COLOR : entry.vote ? SUPPORT_COLOR : OPPOSE_COLOR}
-                                style={{
-                                    transition: 'fill 0.5s ease-in-out',
-                                    opacity: entry.vote === undefined ? 0.6 : 0.9,
-                                    filter: entry.vote !== undefined ? 'drop-shadow(0px 0px 4px rgba(255,255,255,0.2))' : 'none'
-                                }}
-                            />
-                        ))}
-                    </Scatter>
-                </ScatterChart>
-            </ResponsiveContainer>
+                <OrbitControls
+                    enableDamping
+                    dampingFactor={0.05}
+                    minDistance={5}
+                    maxDistance={25}
+                />
+            </Canvas>
         </div>
     );
 }

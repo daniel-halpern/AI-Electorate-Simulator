@@ -21,7 +21,7 @@ export type IdeologyVector = z.infer<typeof ideologyVectorSchema>;
 
 // An AI-generated Citizen
 export const citizenSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(), // Relaxed from .uuid() because Gemini struggles with perfect UUID formatting in bulk
   name: z.string(),
   age: z.number().int().min(18).max(100),
   worldview: z.string(), // A short narrative sentence explaining their views
@@ -51,7 +51,7 @@ export interface SimulationResult {
   opposeCount: number;
   marginOfVictory: number;
   passed: boolean; // support > oppose
-  
+
   // Array of individual citizen actions
   votes: Array<{
     citizenId: string;
