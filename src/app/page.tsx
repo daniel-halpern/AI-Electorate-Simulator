@@ -32,6 +32,7 @@ const T = {
 export default function Home() {
   const { user, isLoading: authLoading } = useUser();
   const [citizens, setCitizens] = useState<Citizen[]>([]);
+  const [generateCount, setGenerateCount] = useState<number>(30);
   const [isGeneratingAgents, setIsGeneratingAgents] = useState(false);
   const [demographics, setDemographics] = useState("");
   const [policyText, setPolicyText] = useState("");
@@ -52,7 +53,7 @@ export default function Home() {
   const handleGenerateAgents = async () => {
     setIsGeneratingAgents(true); setResult(null);
     try {
-      const res = await fetch("/api/generateAgents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ count: 30, demographics }) });
+      const res = await fetch("/api/generateAgents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ count: generateCount, demographics }) });
       const data = await res.json();
       if (data.error) { alert("Error generating agents: " + data.error); }
       else { setCitizens(prev => (prev.length > 0 && prev[0].name === "Marcus Vance") ? data.citizens : [...data.citizens, ...prev]); }
@@ -320,9 +321,18 @@ export default function Home() {
                   <OutlineBtn onClick={handleCluster} disabled={isClustering || citizens.length === 0}>
                     {isClustering ? <><Spin />&nbsp;Clustering…</> : "Identify Factions"}
                   </OutlineBtn>
-                  <PrimaryBtn onClick={handleGenerateAgents} disabled={isGeneratingAgents}>
-                    {isGeneratingAgents ? <><Spin />&nbsp;Generating…</> : "+ 30 Personas"}
-                  </PrimaryBtn>
+                  <div style={{ display: 'flex', alignItems: 'center', background: T.bgInput, border: `1px solid hsl(20 50% 72%)`, borderRadius: 4, overflow: 'hidden' }}>
+                    <input type="number" value={generateCount} onChange={e => setGenerateCount(Math.max(1, Math.min(100, Number(e.target.value))))}
+                      style={{ width: 44, padding: '7px 0 7px 8px', background: 'transparent', border: 'none', borderRight: `1px solid hsl(20 50% 72%)`, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: T.text, outline: 'none' }}
+                    />
+                    <button onClick={handleGenerateAgents} disabled={isGeneratingAgents}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'hsl(20 60% 94%)', border: 'none', cursor: isGeneratingAgents ? 'not-allowed' : 'pointer', opacity: isGeneratingAgents ? 0.4 : 1, color: T.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 500, transition: 'all 0.12s' }}
+                      onMouseEnter={e => !isGeneratingAgents && (e.currentTarget.style.background = 'hsl(20 55% 89%)')}
+                      onMouseLeave={e => !isGeneratingAgents && (e.currentTarget.style.background = 'hsl(20 60% 94%)')}
+                    >
+                      {isGeneratingAgents ? <><Spin />&nbsp;Gen…</> : "Add Personas"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -349,17 +359,15 @@ export default function Home() {
           </section>
 
           {/* Scatter */}
-          {(result || citizens.length > 0) && (
-            <section>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.2em', color: T.textFaint, textTransform: 'uppercase' }}>3D Ideological Space</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: T.textFaint, letterSpacing: '0.05em' }}>left click to rotate · scroll to zoom</span>
-              </div>
-              <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 6, height: 500, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                <IdeologyScatter citizens={citizens} result={result || undefined} clusterAssignments={clusterAssignments} />
-              </div>
-            </section>
-          )}
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.2em', color: T.textFaint, textTransform: 'uppercase' }}>3D Ideological Space</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: T.textFaint, letterSpacing: '0.05em' }}>left click to rotate · scroll to zoom</span>
+            </div>
+            <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 6, height: 500, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+              <IdeologyScatter citizens={citizens} result={result || undefined} clusterAssignments={clusterAssignments} />
+            </div>
+          </section>
 
           {/* Results */}
           {result && (
