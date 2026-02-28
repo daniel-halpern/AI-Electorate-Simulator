@@ -375,24 +375,29 @@ export default function Home() {
           {result && (
             <section>
               <SectionLabel number="03" title="Simulation Results" subtitle={`Policy: ${policyText.slice(0, 55)}…`} />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginTop: 12 }}>
                 <MetricCard label="Outcome">
                   {result.passed
-                    ? <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.green }}><CheckCircle size={15} /><span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14 }}>PASSED</span></div>
-                    : <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.red }}><XCircle size={15} /><span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14 }}>FAILED</span></div>
+                    ? <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.green }}><CheckCircle size={15} /><span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13 }}>PASSED</span></div>
+                    : <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.red }}><XCircle size={15} /><span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13 }}>FAILED</span></div>
                   }
                 </MetricCard>
+                <MetricCard label="Turnout">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: T.text }}>
+                    <Users size={13} />
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 20 }}>
+                      {((result.totalVotes / citizens.length) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                </MetricCard>
                 <MetricCard label="In Favour">
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 28, color: T.green }}>{result.supportCount}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 24, color: T.green }}>{result.supportCount}</span>
                 </MetricCard>
                 <MetricCard label="Opposed">
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 28, color: T.red }}>{result.opposeCount}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 24, color: T.red }}>{result.opposeCount}</span>
                 </MetricCard>
-                <MetricCard label="Polarization">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: T.amber }}>
-                    <TrendingUp size={13} />
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22 }}>{result.polarizationIndex.toFixed(2)}</span>
-                  </div>
+                <MetricCard label="Abstained">
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 24, color: T.textFaint }}>{citizens.length - result.totalVotes}</span>
                 </MetricCard>
               </div>
             </section>

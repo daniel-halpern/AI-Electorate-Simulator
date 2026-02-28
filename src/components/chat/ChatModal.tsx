@@ -21,8 +21,15 @@ export default function ChatModal({ citizenData, policy, onClose }: ChatModalPro
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Initial greeting based on their vote
+    // Initial greeting based on their vote
     useEffect(() => {
-        const voteStr = voteRecord.vote ? "voted in favor of" : "opposed";
+        let voteStr = "";
+        if (!voteRecord.didVote) {
+            voteStr = "abstained from voting on";
+        } else {
+            voteStr = voteRecord.vote ? "voted in favor of" : "opposed";
+        }
+
         setMessages([{
             role: 'model',
             text: `Hi, I'm ${citizen.name}. I ${voteStr} the "${policy.title}" proposal. What do you want to ask me?`

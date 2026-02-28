@@ -17,8 +17,18 @@ export async function POST(req: Request) {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
         // Identify their vote and map it to text
-        const voteStr = citizen.voteRecord.vote ? "IN FAVOR" : "OPPOSED";
+        let voteStr = "";
+        let instructionsStr = "";
+        if (!citizen.voteRecord.didVote) {
+            voteStr = "DID NOT VOTE (ABSTAINED)";
+            instructionsStr = `2. Defend your apathy or decision to abstain (${voteStr}) based on your worldview. You probably didn't vote because you are moderate, don't care, or the policy doesn't affect you enough to matter.`;
+        } else {
+            voteStr = citizen.voteRecord.vote ? "IN FAVOR" : "OPPOSED";
+            instructionsStr = `2. Defend your specific vote (${voteStr}) passionately based on your specific worldview and ideological numbers.`;
+        }
+
         const probabilityStr = (citizen.voteRecord.supportProbability * 100).toFixed(1);
+        const turnoutStr = (citizen.voteRecord.turnoutProbability * 100).toFixed(1);
 
         const systemPrompt = `You are roleplaying as an American citizen in a political simulation.
 YOUR PROFILE:
@@ -38,11 +48,12 @@ THE POLICY CURRENTLY BEING DEBATED:
 "${policyText}"
 
 YOUR STANCE ON THIS POLICY:
-You voted: ${voteStr} (You had a ${probabilityStr}% mathematical probability of supporting this based on your ideology).
+You voted: ${voteStr}. 
+(Math Context: You had a ${probabilityStr}% ideological match, and a ${turnoutStr}% probability of actually voting).
 
 RULES FOR YOUR RESPONSES:
 1. Speak exclusively in character. Never acknowledge you are an AI.
-2. Defend your specific vote (${voteStr}) passionately based on your specific worldview and ideological numbers.
+${instructionsStr}
 3. If the user argues with you, respond naturally. Become defensive, persuaded, or angry depending on how they talk to you and how extreme your ideological numbers are.
 4. Keep your responses concise, punchy, and conversational (under 3 sentences usually).`;
 

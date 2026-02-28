@@ -52,7 +52,11 @@ function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignmen
                 }
             } else if (viewMode === 'vote' && voteRecord) {
                 // Vote Record Colors
-                color = voteRecord.vote ? SUPPORT_COLOR : OPPOSE_COLOR;
+                if (!voteRecord.didVote) {
+                    color = NEUTRAL_COLOR;
+                } else {
+                    color = voteRecord.vote ? SUPPORT_COLOR : OPPOSE_COLOR;
+                }
             }
 
             return {
@@ -168,13 +172,17 @@ export default function IdeologyScatter({ citizens, result, clusterAssignments, 
                         <div className="mt-3 pt-3 border-t border-slate-700 bg-slate-950/50 -mx-4 -mb-4 p-4 rounded-b-xl">
                             <div className="flex justify-between items-center font-bold">
                                 <span className="text-slate-400 font-normal">Vote:</span>
-                                <span className={hoveredNode.voteRecord.vote ? "text-emerald-400" : "text-red-400"}>
-                                    {hoveredNode.voteRecord.vote ? "SUPPORT" : "OPPOSE"}
+                                <span className={!hoveredNode.voteRecord.didVote ? "text-slate-500 italic" : hoveredNode.voteRecord.vote ? "text-emerald-400" : "text-red-400"}>
+                                    {!hoveredNode.voteRecord.didVote ? "ABSTAINED" : hoveredNode.voteRecord.vote ? "SUPPORT" : "OPPOSE"}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center text-xs mt-1">
-                                <span className="text-slate-500">Probability:</span>
-                                <span className="text-slate-300">{(hoveredNode.voteRecord.supportProbability * 100).toFixed(1)}%</span>
+                                <span className="text-slate-500">Turnout Prob:</span>
+                                <span className="text-slate-300">{(hoveredNode.voteRecord.turnoutProbability * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs mt-1 border-t border-slate-800/50 pt-1">
+                                <span className="text-slate-600">Ideology Match:</span>
+                                <span className="text-slate-400">{(hoveredNode.voteRecord.supportProbability * 100).toFixed(1)}%</span>
                             </div>
                         </div>
                     )}

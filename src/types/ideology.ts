@@ -57,8 +57,10 @@ export interface SimulationResult {
   votes: Array<{
     citizenId: string;
     vote: boolean; // true = support, false = oppose
+    didVote: boolean; // false if they stayed home
     distanceToPolicy: number;
     supportProbability: number;
+    turnoutProbability: number;
   }>;
 
   // Polarization Metrics
