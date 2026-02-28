@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Citizen, Policy, SimulationResult } from "@/types/ideology";
 import { runSimulation } from "@/lib/simulation/vectorMath";
 import IdeologyScatter from "@/components/visualization/IdeologyScatter";
-import { Loader2, Users, Send, TrendingUp, CheckCircle, XCircle, Download, Upload, Trash2 } from "lucide-react";
+import { Loader2, Users, Send, TrendingUp, CheckCircle, XCircle, Download, Upload, Trash2, Cloud, CloudDownload } from "lucide-react";
 import { MOCK_CITIZENS } from "@/lib/simulation/mockData";
 
 export default function Home() {
@@ -14,6 +14,12 @@ export default function Home() {
   const [policyText, setPolicyText] = useState("");
   const [isSimulating, setIsSimulating] = useState(false);
   const [result, setResult] = useState<SimulationResult | null>(null);
+
+  // Cloud DB State
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingDB, setIsLoadingDB] = useState(false);
+  const [savedElectorates, setSavedElectorates] = useState<any[]>([]);
+  const [showLoadModal, setShowLoadModal] = useState(false);
 
   // Clustering State
   const [isClustering, setIsClustering] = useState(false);
@@ -99,6 +105,76 @@ export default function Home() {
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const handleSaveToCloud = async () => {
+    if (citizens.length === 0) return;
+    const name = prompt("Enter a name for this Electorate (e.g. 'Ohio Union Workers'):");
+    if (!name) return;
+
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/electorate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          description: demographics || "Generated AI Electorate",
+          citizens,
+          factions: factions.length > 0 ? factions : undefined
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      alert("Electorate saved to MongoDB Atlas!");
+    } catch (err: any) {
+      alert(err.message || "Failed to save to cloud");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const loadElectorateList = async () => {
+    setIsLoadingDB(true);
+    try {
+      const res = await fetch("/api/electorate");
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setSavedElectorates(data.electorates);
+      setShowLoadModal(true);
+    } catch (err: any) {
+      alert(err.message || "Failed to fetch from MongoDB");
+    } finally {
+      setIsLoadingDB(false);
+    }
+  };
+
+  const handleLoadFromCloud = async (id: string) => {
+    setIsLoadingDB(true);
+    try {
+      const res = await fetch(`/api/electorate/${id}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      if (data.electorate.citizens) {
+        setCitizens(data.electorate.citizens);
+        setResult(null);
+        if (data.electorate.factions) {
+          setFactions(data.electorate.factions);
+          // Since we didn't save assignments natively to save space, we need to re-assign or rely on the saved assignments.
+          // For the MVP, we will clear the assignments requiring a re-cluster click, or we could just save them if we added it to schema.
+          setClusterAssignments([]);
+        } else {
+          setFactions([]);
+          setClusterAssignments([]);
+        }
+        setShowLoadModal(false);
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to load specific Electorate");
+    } finally {
+      setIsLoadingDB(false);
+    }
   };
 
   const handleSimulate = async (e: React.FormEvent) => {
@@ -203,6 +279,13 @@ export default function Home() {
                     <Upload className="w-4 h-4" />
                     <input type="file" accept=".json" onChange={handleImportElectorate} className="hidden" />
                   </label>
+                  <div className="w-px h-6 bg-slate-700 mx-1 mt-1"></div>
+                  <button onClick={handleSaveToCloud} disabled={citizens.length === 0 || isSaving} className="p-2 bg-slate-800 hover:bg-purple-500/20 text-slate-400 hover:text-purple-400 disabled:opacity-50 rounded transition-colors" title="Save to MongoDB Atlas">
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
+                  </button>
+                  <button onClick={loadElectorateList} disabled={isLoadingDB} className="p-2 bg-slate-800 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 disabled:opacity-50 rounded transition-colors" title="Load from MongoDB Atlas">
+                    {isLoadingDB ? <Loader2 className="w-4 h-4 animate-spin" /> : <CloudDownload className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
               <button
@@ -329,6 +412,49 @@ export default function Home() {
         </div>
 
       </div>
+
+      {/* Load from Cloud Database Dashboard Modal */}
+      {showLoadModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur z-50 flex items-center justify-center p-6">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <CloudDownload className="w-6 h-6 text-amber-500" />
+                MongoDB Target Populations
+              </h2>
+              <button onClick={() => setShowLoadModal(false)} className="text-slate-400 hover:text-white">
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+              {savedElectorates.length === 0 ? (
+                <div className="text-center text-slate-500 py-10">No electorates found in the cloud database. Generate and save one first!</div>
+              ) : (
+                savedElectorates.map((elec) => (
+                  <div key={elec._id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center hover:border-amber-500/50 transition-colors">
+                    <div>
+                      <h3 className="font-bold text-lg text-emerald-400">{elec.name}</h3>
+                      <p className="text-sm text-slate-400 mt-1">{elec.description}</p>
+                      <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {elec.size} Citizens</span>
+                        <span>Saved: {new Date(elec.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleLoadFromCloud(elec._id)}
+                      className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition-colors text-sm shadow-lg shadow-amber-500/20"
+                    >
+                      Load
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }
