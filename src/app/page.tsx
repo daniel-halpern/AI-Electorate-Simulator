@@ -315,9 +315,36 @@ export default function Home() {
                 onBlur={e => (e.target.style.borderColor = T.border)}
               />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.textFaint, letterSpacing: '0.1em' }}>CORPUS SIZE</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: T.accent, background: T.accentLight, padding: '2px 8px', borderRadius: 3, border: `1px solid ${T.accent}33` }}>{citizens.length}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div>
+                    <input
+                      type="file"
+                      accept=".txt,.csv,.json"
+                      id="demo-upload"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          if (event.target?.result) {
+                            setDemographics(event.target.result as string);
+                          }
+                        };
+                        reader.readAsText(file);
+                      }}
+                    />
+                    <label htmlFor="demo-upload" style={{ cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.accent, textTransform: 'uppercase', letterSpacing: '0.05em', border: `1px dashed ${T.accent}66`, padding: '4px 8px', borderRadius: 4, transition: 'background 0.1s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = T.accentLight}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      Upload CSV / TXT
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, borderLeft: `1px solid ${T.border}`, paddingLeft: 12 }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.textFaint, letterSpacing: '0.1em' }}>CORPUS SIZE</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: T.accent, background: T.accentLight, padding: '2px 8px', borderRadius: 3, border: `1px solid ${T.accent}33` }}>{citizens.length}</span>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <OutlineBtn onClick={handleCluster} disabled={isClustering || citizens.length === 0}>

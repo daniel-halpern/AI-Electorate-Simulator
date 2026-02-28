@@ -150,7 +150,12 @@ export default function IdeologyScatter({ citizens, result, clusterAssignments, 
                 <div
                     className="absolute top-4 right-4 bg-slate-900 border border-slate-700 p-4 rounded-xl shadow-2xl text-sm z-20 w-72 pointer-events-none transition-opacity"
                 >
-                    <p className="font-bold text-white mb-1">{hoveredNode.citizen.name}</p>
+                    <p className="font-bold text-white mb-1">
+                        {hoveredNode.citizen.name} <span className="text-slate-500 font-normal text-xs ml-2">({hoveredNode.citizen.age}, {hoveredNode.citizen.gender})</span>
+                    </p>
+                    <p className="text-xs text-slate-400 mb-3 italic">
+                        {hoveredNode.citizen.job || "Occupation Unknown"}
+                    </p>
                     <div className="flex justify-between items-center text-xs mb-1">
                         <span className="text-slate-400">Economic:</span>
                         <span className="text-emerald-400 font-mono">{hoveredNode.citizen.ideology.economic.toFixed(2)}</span>

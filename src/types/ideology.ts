@@ -24,6 +24,8 @@ export const citizenSchema = z.object({
   id: z.string(), // Relaxed from .uuid() because Gemini struggles with perfect UUID formatting in bulk
   name: z.string(),
   age: z.number().int().min(18).max(100),
+  gender: z.string(),
+  job: z.string(),
   worldview: z.string(), // A short narrative sentence explaining their views
   ideology: ideologyVectorSchema,
 });

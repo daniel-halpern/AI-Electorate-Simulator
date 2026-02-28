@@ -29,6 +29,8 @@ export async function POST(req: Request) {
                             id: { type: Type.STRING },
                             name: { type: Type.STRING },
                             age: { type: Type.NUMBER },
+                            gender: { type: Type.STRING },
+                            job: { type: Type.STRING, description: "A realistic occupation based on their age and demographics" },
                             worldview: {
                                 type: Type.STRING,
                                 description: "A short, one-sentence narrative explaining their core beliefs."
@@ -46,7 +48,7 @@ export async function POST(req: Request) {
                                 required: ["economic", "social", "environmental", "authority_preference", "collectivism", "risk_tolerance"]
                             }
                         },
-                        required: ["id", "name", "age", "worldview", "ideology"]
+                        required: ["id", "name", "age", "gender", "job", "worldview", "ideology"]
                     }
                 }
             },
@@ -58,7 +60,7 @@ export async function POST(req: Request) {
             model: "gemini-2.5-flash",
             contents: `You are a sophisticated political science demographic model. Generate exactly ${count} distinct, highly realistic citizen personas for a governance simulation.
 
-${demographics ? `CRITICAL CONTEXT: The citizens MUST accurately reflect this demographic: "${demographics}". Their ideological vectors, age, and worldviews should match this specific profile.` : 'Make sure to cover the absolute extremes of the political spectrum as well as the moderate center.'}
+${demographics ? `CRITICAL CONTEXT - THE USER UPLOADED THIS DEMOGRAPHIC DATA:\n"""\n${demographics}\n"""\nYour generated electorate MUST accurately reflect these demographic statistics. Adjust the ages, genders, jobs, and ideological vectors to strictly map to the demographics provided above.` : 'Make sure to cover the absolute extremes of the political spectrum as well as the moderate center.'}
 
 CRITICAL RULES FOR 6D IDEOLOGY VECTORS:
 1. NATURAL VARIANCE (Avoid "Streaks"): Real humans are messy. Do not map everyone on a perfect straight line. Introduce heavy Gaussian noise and realistic contradictions (e.g. socially progressive but economically conservative, or vice versa). Scatter them into a natural "blob", not a flat line.
