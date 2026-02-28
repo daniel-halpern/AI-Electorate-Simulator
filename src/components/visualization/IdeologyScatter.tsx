@@ -9,6 +9,7 @@ import { SimulationResult, Citizen } from "@/types/ideology";
 interface Props {
     citizens: Citizen[];
     result?: SimulationResult;
+    clusterAssignments?: { citizenId: string, clusterIndex: number }[];
 }
 
 // Colors
@@ -16,7 +17,7 @@ const SUPPORT_COLOR = new THREE.Color("#10b981"); // Emerald 500
 const OPPOSE_COLOR = new THREE.Color("#ef4444"); // Red 500
 const NEUTRAL_COLOR = new THREE.Color("#64748b"); // Slate 500
 
-function Scene({ citizens, result, setHoveredCitizen, isPaused }: { citizens: Citizen[], result?: SimulationResult, setHoveredCitizen: (c: any) => void, isPaused: boolean }) {
+function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignments }: { citizens: Citizen[], result?: SimulationResult, setHoveredCitizen: (c: any) => void, isPaused: boolean, clusterAssignments?: { citizenId: string, clusterIndex: number }[] }) {
     const groupRef = useRef<THREE.Group>(null);
 
     // Slowly rotate the entire scatter plot for a premium dynamic feel
@@ -38,7 +39,19 @@ function Scene({ citizens, result, setHoveredCitizen, isPaused }: { citizens: Ci
                 (c.ideology.authority_preference * 2 - 1) * SCALE // map 0-1 to -1 to 1
             );
 
+            // Default Color
             let color = NEUTRAL_COLOR;
+
+            // Faction Colors overrides default
+            if (clusterAssignments && clusterAssignments.length > 0) {
+                const myFaction = clusterAssignments.find(a => a.citizenId === c.id);
+                if (myFaction !== undefined) {
+                    const FACTION_COLORS = ["#a855f7", "#f59e0b", "#ec4899", "#06b6d4", "#84cc16"]; // purple, amber, pink, cyan, lime
+                    color = new THREE.Color(FACTION_COLORS[myFaction.clusterIndex % FACTION_COLORS.length]);
+                }
+            }
+
+            // Vote Record overrides everything
             if (voteRecord) {
                 color = voteRecord.vote ? SUPPORT_COLOR : OPPOSE_COLOR;
             }
@@ -51,7 +64,7 @@ function Scene({ citizens, result, setHoveredCitizen, isPaused }: { citizens: Ci
                 voteRecord
             };
         });
-    }, [citizens, result]);
+    }, [citizens, result, clusterAssignments]);
 
     return (
         <group ref={groupRef}>
@@ -88,7 +101,7 @@ function Scene({ citizens, result, setHoveredCitizen, isPaused }: { citizens: Ci
     );
 }
 
-export default function IdeologyScatter({ citizens, result }: Props) {
+export default function IdeologyScatter({ citizens, result, clusterAssignments }: Props) {
     const [hoveredNode, setHoveredNode] = useState<any>(null);
     const [isPaused, setIsPaused] = useState(false);
 
@@ -152,7 +165,7 @@ export default function IdeologyScatter({ citizens, result }: Props) {
                 <directionalLight position={[10, 10, 5]} intensity={1} />
                 <pointLight position={[-10, -10, -10]} intensity={0.5} color="#475569" />
 
-                <Scene citizens={citizens} result={result} setHoveredCitizen={setHoveredNode} isPaused={isPaused} />
+                <Scene citizens={citizens} result={result} setHoveredCitizen={setHoveredNode} isPaused={isPaused} clusterAssignments={clusterAssignments} />
 
                 <OrbitControls
                     enableDamping

@@ -15,6 +15,13 @@ export default function Home() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [result, setResult] = useState<SimulationResult | null>(null);
 
+  // Clustering State
+  const [isClustering, setIsClustering] = useState(false);
+  // Factions returned from the AI
+  const [factions, setFactions] = useState<{ clusterIndex: number, name: string, description: string }[]>([]);
+  // Map of Citizen ID to their Faction Index
+  const [clusterAssignments, setClusterAssignments] = useState<{ citizenId: string, clusterIndex: number }[]>([]);
+
   // Initialize with mock citizens to avoid API rate limits during dev
   useEffect(() => {
     setCitizens(MOCK_CITIZENS);
@@ -56,6 +63,8 @@ export default function Home() {
     if (confirm("Are you sure you want to clear the entire electorate?")) {
       setCitizens([]);
       setResult(null);
+      setFactions([]);
+      setClusterAssignments([]);
     }
   };
 
@@ -126,6 +135,31 @@ export default function Home() {
     }
   };
 
+  const handleCluster = async () => {
+    if (citizens.length < 10) {
+      alert("Please generate at least 10 citizens before clustering.");
+      return;
+    }
+    setIsClustering(true);
+    try {
+      const res = await fetch("/api/clusterElectorate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ citizens })
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      setFactions(data.factions);
+      setClusterAssignments(data.assignments);
+    } catch (err: any) {
+      alert(err.message || "Failed to cluster electorate.");
+    } finally {
+      setIsClustering(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 font-sans p-6">
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -181,34 +215,77 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Core Input Form */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl flex-1">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Send className="w-5 h-5 text-blue-400" />
-              Propose Policy
-            </h2>
-            <form onSubmit={handleSimulate} className="flex flex-col h-full gap-4">
-              <textarea
-                value={policyText}
-                onChange={(e) => setPolicyText(e.target.value)}
-                placeholder="e.g. Ban all internal combustion engine vehicles by 2035 and invest heavily in high-speed public rail networks..."
-                className="w-full flex-1 min-h-[160px] bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none placeholder:text-slate-600"
-              />
-              <button
-                type="submit"
-                disabled={isSimulating || !policyText.trim()}
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 tracking-wide shadow-lg shadow-blue-500/20"
-              >
-                {isSimulating ? <Loader2 className="w-5 h-5 animate-spin" /> : "Run Voting Simulation"}
-              </button>
-            </form>
+          {/* Core Input Form & Factions Panel */}
+          <div className="flex-1 flex flex-col gap-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl flex-shrink-0">
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <Send className="w-5 h-5 text-blue-400" />
+                Propose Policy
+              </h2>
+              <form onSubmit={handleSimulate} className="flex flex-col gap-4">
+                <textarea
+                  value={policyText}
+                  onChange={(e) => setPolicyText(e.target.value)}
+                  placeholder="e.g. Ban all internal combustion engine vehicles by 2035 and invest heavily in high-speed public rail networks..."
+                  className="w-full flex-1 min-h-[120px] bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none placeholder:text-slate-600"
+                />
+                <button
+                  type="submit"
+                  disabled={isSimulating || !policyText.trim()}
+                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 tracking-wide shadow-lg shadow-blue-500/20"
+                >
+                  {isSimulating ? <Loader2 className="w-5 h-5 animate-spin" /> : "Run Voting Simulation"}
+                </button>
+              </form>
+            </div>
+
+            {/* Factions Discovered Panel */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl flex-1 flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Users className="w-5 h-5 text-purple-400" />
+                  Political Factions
+                </h2>
+                <button
+                  onClick={handleCluster}
+                  disabled={isClustering || citizens.length === 0}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-lg text-xs font-bold text-slate-300 transition-colors flex items-center gap-2"
+                >
+                  {isClustering ? <Loader2 className="w-3 h-3 animate-spin" /> : "Identify Factions"}
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+                {factions.length === 0 ? (
+                  <div className="text-slate-500 text-sm text-center italic mt-10">Run the K-Means algorithm to discover the underlying demographic factions.</div>
+                ) : (
+                  factions.map((f, i) => {
+                    // Assign deterministic distinct colors to the factions
+                    const colors = ['border-purple-500 text-purple-400', 'border-amber-500 text-amber-400', 'border-pink-500 text-pink-400', 'border-cyan-500 text-cyan-400', 'border-lime-500 text-lime-400'];
+                    const colorClass = colors[i % colors.length];
+                    const factionSize = clusterAssignments.filter(a => a.clusterIndex === f.clusterIndex).length;
+                    const percentage = Math.round((factionSize / citizens.length) * 100);
+
+                    return (
+                      <div key={i} className={`p-4 bg-slate-950 rounded-xl border-l-4 ${colorClass}`}>
+                        <div className="flex justify-between items-start mb-1">
+                          <div className="font-bold">{f.name}</div>
+                          <div className="text-xs font-mono bg-slate-800 px-2 py-0.5 rounded">{percentage}%</div>
+                        </div>
+                        <p className="text-xs text-slate-400 leading-relaxed">{f.description}</p>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Visualization & Results Area */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-2xl h-[500px]">
-            <IdeologyScatter citizens={citizens} result={result || undefined} />
+            <IdeologyScatter citizens={citizens} result={result || undefined} clusterAssignments={clusterAssignments} />
           </div>
 
           {/* Metrics Dashboard */}
