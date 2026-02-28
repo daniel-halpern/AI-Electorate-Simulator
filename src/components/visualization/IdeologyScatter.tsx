@@ -17,7 +17,7 @@ const SUPPORT_COLOR = new THREE.Color("#10b981"); // Emerald 500
 const OPPOSE_COLOR = new THREE.Color("#ef4444"); // Red 500
 const NEUTRAL_COLOR = new THREE.Color("#64748b"); // Slate 500
 
-function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignments }: { citizens: Citizen[], result?: SimulationResult, setHoveredCitizen: (c: any) => void, isPaused: boolean, clusterAssignments?: { citizenId: string, clusterIndex: number }[] }) {
+function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignments, viewMode }: { citizens: Citizen[], result?: SimulationResult, setHoveredCitizen: (c: any) => void, isPaused: boolean, clusterAssignments?: { citizenId: string, clusterIndex: number }[], viewMode: 'vote' | 'faction' }) {
     const groupRef = useRef<THREE.Group>(null);
 
     // Slowly rotate the entire scatter plot for a premium dynamic feel
@@ -42,17 +42,15 @@ function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignmen
             // Default Color
             let color = NEUTRAL_COLOR;
 
-            // Faction Colors overrides default
-            if (clusterAssignments && clusterAssignments.length > 0) {
+            if (viewMode === 'faction' && clusterAssignments && clusterAssignments.length > 0) {
+                // Faction Colors
                 const myFaction = clusterAssignments.find(a => a.citizenId === c.id);
                 if (myFaction !== undefined) {
                     const FACTION_COLORS = ["#a855f7", "#f59e0b", "#ec4899", "#06b6d4", "#84cc16"]; // purple, amber, pink, cyan, lime
                     color = new THREE.Color(FACTION_COLORS[myFaction.clusterIndex % FACTION_COLORS.length]);
                 }
-            }
-
-            // Vote Record overrides everything
-            if (voteRecord) {
+            } else if (viewMode === 'vote' && voteRecord) {
+                // Vote Record Colors
                 color = voteRecord.vote ? SUPPORT_COLOR : OPPOSE_COLOR;
             }
 
@@ -64,7 +62,7 @@ function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignmen
                 voteRecord
             };
         });
-    }, [citizens, result, clusterAssignments]);
+    }, [citizens, result, clusterAssignments, viewMode]);
 
     return (
         <group ref={groupRef}>
@@ -104,6 +102,19 @@ function Scene({ citizens, result, setHoveredCitizen, isPaused, clusterAssignmen
 export default function IdeologyScatter({ citizens, result, clusterAssignments }: Props) {
     const [hoveredNode, setHoveredNode] = useState<any>(null);
     const [isPaused, setIsPaused] = useState(false);
+    const [preferredView, setPreferredView] = useState<'vote' | 'faction'>('faction');
+
+    const hasVotes = !!result;
+    const hasFactions = clusterAssignments && clusterAssignments.length > 0;
+
+    let viewMode: 'vote' | 'faction' = 'vote';
+    if (hasFactions && hasVotes) {
+        viewMode = preferredView;
+    } else if (hasFactions) {
+        viewMode = 'faction';
+    } else {
+        viewMode = 'vote';
+    }
 
     return (
         <div className="w-full h-full bg-slate-950/50 rounded-xl border border-slate-800 relative overflow-hidden backdrop-blur-sm shadow-2xl">
@@ -111,6 +122,15 @@ export default function IdeologyScatter({ citizens, result, clusterAssignments }
                 3D Ideological Space
                 <div className="text-[10px] lowercase text-slate-600 mt-1">Left click to rotate. Scroll to zoom.</div>
             </div>
+
+            {hasVotes && hasFactions && (
+                <button
+                    onClick={() => setPreferredView(v => v === 'vote' ? 'faction' : 'vote')}
+                    className="absolute bottom-4 left-4 z-20 px-3 py-1.5 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg text-xs font-bold tracking-widest text-emerald-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer shadow-lg"
+                >
+                    SWITCH TO {preferredView === 'vote' ? 'FACTION' : 'VOTE'} VIEW
+                </button>
+            )}
 
             <button
                 onClick={() => setIsPaused(!isPaused)}
@@ -165,7 +185,7 @@ export default function IdeologyScatter({ citizens, result, clusterAssignments }
                 <directionalLight position={[10, 10, 5]} intensity={1} />
                 <pointLight position={[-10, -10, -10]} intensity={0.5} color="#475569" />
 
-                <Scene citizens={citizens} result={result} setHoveredCitizen={setHoveredNode} isPaused={isPaused} clusterAssignments={clusterAssignments} />
+                <Scene citizens={citizens} result={result} setHoveredCitizen={setHoveredNode} isPaused={isPaused} clusterAssignments={clusterAssignments} viewMode={viewMode} />
 
                 <OrbitControls
                     enableDamping
