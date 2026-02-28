@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { auth0 } from '@/lib/auth0';
 import connectToDatabase from "@/lib/db/mongodb";
 import Electorate from "@/models/Electorate";
 
 export async function POST(req: Request) {
     try {
+        const session = await auth0.getSession();
+        if (!session || !session.user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const { name, description, citizens, factions } = await req.json();
 
         if (!name || !citizens || citizens.length === 0) {
@@ -17,7 +23,8 @@ export async function POST(req: Request) {
             description,
             size: citizens.length,
             citizens,
-            factions
+            factions,
+            userId: session.user.sub // Link to Auth0 profile ID
         });
 
         const savedDcoument = await newElectorate.save();
@@ -26,19 +33,25 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("MongoDB Save Error:", error);
-        return NextResponse.json({ error: "Failed to save Electorate to cloud database" }, { status: 500 });
+        return NextResponse.json({ error: "Failed to save Electorate to cloud database", details: error.message, stack: error.stack }, { status: 500 });
     }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
+        const session = await auth0.getSession();
+        if (!session || !session.user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         await connectToDatabase();
-        // Return all saved electorates, sorted by newest first
-        const electorates = await Electorate.find({}).sort({ createdAt: -1 }).select('-citizens').lean();
+
+        // Return only the saved electorates owned by this authenticated user
+        const electorates = await Electorate.find({ userId: session.user.sub }).sort({ createdAt: -1 }).select('-citizens').lean();
 
         return NextResponse.json({ electorates });
     } catch (error: any) {
         console.error("MongoDB Fetch Error:", error);
-        return NextResponse.json({ error: "Failed to load Electorates from database" }, { status: 500 });
+        return NextResponse.json({ error: "Failed to load Electorates from database", details: error.message, stack: error.stack }, { status: 500 });
     }
 }

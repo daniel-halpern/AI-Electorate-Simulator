@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { Citizen, Policy, SimulationResult } from "@/types/ideology";
 import { runSimulation } from "@/lib/simulation/vectorMath";
 import IdeologyScatter from "@/components/visualization/IdeologyScatter";
-import { Loader2, Users, Send, TrendingUp, CheckCircle, XCircle, Download, Upload, Trash2, Cloud, CloudDownload } from "lucide-react";
+import { Loader2, Users, Send, TrendingUp, CheckCircle, XCircle, Download, Upload, Trash2, Cloud, CloudDownload, LogOut, LogIn } from "lucide-react";
 import { MOCK_CITIZENS } from "@/lib/simulation/mockData";
+import { useUser } from '@auth0/nextjs-auth0/client';
 
 export default function Home() {
+  const { user, isLoading: authLoading } = useUser();
   const [citizens, setCitizens] = useState<Citizen[]>([]);
   const [isGeneratingAgents, setIsGeneratingAgents] = useState(false);
   const [demographics, setDemographics] = useState("");
@@ -125,7 +127,7 @@ export default function Home() {
         })
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (data.error) throw new Error(`${data.error} | ${data.details || ""} | ${data.stack || ""}`);
       alert("Electorate saved to MongoDB Atlas!");
     } catch (err: any) {
       alert(err.message || "Failed to save to cloud");
@@ -267,13 +269,13 @@ export default function Home() {
           <div className="flex flex-col gap-2">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Electorate DB</span>
             <div className="flex flex-col gap-1">
-              <button onClick={loadElectorateList} disabled={isLoadingDB} className="flex items-center gap-3 w-full px-3 py-2 hover:bg-slate-800 rounded-lg text-sm text-slate-300 transition-colors text-left font-medium" title="Load from Cloud">
+              <button onClick={loadElectorateList} disabled={isLoadingDB || !user} className="flex items-center gap-3 w-full px-3 py-2 hover:bg-slate-800 rounded-lg text-sm text-slate-300 transition-colors text-left font-medium disabled:opacity-50 disabled:cursor-not-allowed" title={user ? "Load from Cloud" : "Login via Auth0 to enable Cloud Load"}>
                 <CloudDownload className="w-4 h-4 text-emerald-400" />
-                Load Electorates
+                {user ? "Load Electorates" : "Load Electorates (Login Required)"}
               </button>
-              <button onClick={handleSaveToCloud} disabled={citizens.length === 0 || isSaving} className="flex items-center gap-3 w-full px-3 py-2 hover:bg-slate-800 rounded-lg text-sm text-slate-300 transition-colors text-left font-medium disabled:opacity-50" title="Save to Cloud">
+              <button onClick={handleSaveToCloud} disabled={citizens.length === 0 || isSaving || !user} className="flex items-center gap-3 w-full px-3 py-2 hover:bg-slate-800 rounded-lg text-sm text-slate-300 transition-colors text-left font-medium disabled:opacity-50 disabled:cursor-not-allowed" title={user ? "Save to Cloud" : "Login via Auth0 to enable Cloud Saves"}>
                 <Cloud className="w-4 h-4 text-slate-400" />
-                Save to Cloud
+                {user ? "Save to Cloud" : "Save to Cloud (Login Required)"}
               </button>
               <div className="h-px bg-slate-800 w-full my-2"></div>
               <label className="flex items-center gap-3 w-full px-3 py-2 hover:bg-slate-800 rounded-lg text-sm text-slate-300 transition-colors text-left font-medium cursor-pointer" title="Import JSON">
@@ -317,10 +319,42 @@ export default function Home() {
             )}
           </div>
 
-          <button onClick={handleResetElectorate} className="flex items-center gap-3 w-full p-3 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-xl text-sm text-red-500/80 hover:text-red-400 transition-colors justify-center mt-auto font-medium" title="Clear All Data">
+          <button onClick={handleResetElectorate} className="flex items-center gap-3 w-full p-3 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-xl text-sm text-red-500/80 hover:text-red-400 transition-colors justify-center font-medium" title="Clear All Data">
             <Trash2 className="w-4 h-4" />
             Clear Workspace
           </button>
+
+          {/* User Profile Area */}
+          <div className="mt-auto pt-4 border-t border-slate-800 flex flex-col gap-3">
+            {!authLoading && (
+              user ? (
+                <div className="flex flex-col gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {user.picture ? (
+                        <img src={user.picture} alt="Profile" className="w-8 h-8 rounded-full border border-slate-700" />
+                      ) : (
+                        <div className="w-8 h-8 bg-emerald-500/20 border border-emerald-500/50 rounded-full flex items-center justify-center text-emerald-400 font-bold text-xs">{user.name?.charAt(0) || user.email?.charAt(0) || "U"}</div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-200 truncate max-w-[120px]">{user.name || user.email}</span>
+                        <span className="text-[10px] text-emerald-400">Authenticated</span>
+                      </div>
+                    </div>
+                  </div>
+                  <a href="/auth/logout" className="flex items-center justify-center gap-2 w-full py-1.5 mt-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-medium transition-colors">
+                    <LogOut className="w-3 h-3" />
+                    Sign Out
+                  </a>
+                </div>
+              ) : (
+                <a href="/auth/login" className="flex items-center justify-center gap-2 w-full p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold transition-colors shadow-lg shadow-emerald-900/50">
+                  <LogIn className="w-4 h-4" />
+                  Login / Sign Up
+                </a>
+              )
+            )}
+          </div>
         </div>
       </div>
 

@@ -6,6 +6,7 @@ export interface IElectorate extends Document {
     description?: string;
     size: number;
     citizens: Citizen[];
+    userId: string;
     factions?: {
         clusterIndex: number;
         name: string;
@@ -19,6 +20,7 @@ const ElectorateSchema: Schema = new Schema({
     description: { type: String },
     size: { type: Number, required: true },
     citizens: { type: Schema.Types.Mixed, required: true }, // Store the JSON array directly
+    userId: { type: String, required: true, index: true }, // Link to Auth0 sub
     factions: { type: Schema.Types.Mixed }, // Store the clusters directly
     createdAt: { type: Date, default: Date.now },
 });
