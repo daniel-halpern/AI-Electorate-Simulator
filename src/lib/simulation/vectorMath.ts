@@ -48,7 +48,15 @@ export function runSimulation(policy: Policy, electorate: Citizen[]): Simulation
 
     const votes = electorate.map(citizen => {
         const dist = euclideanDistance(citizen.ideology, policy.vector);
-        const prob = calculateSupportProbability(dist);
+        let prob = calculateSupportProbability(dist);
+
+        // Valence / Universal Appeal Shift:
+        // For troll policies that are universally loved (save puppies) or hated (kill everyone),
+        // we linearly shift the ideological probability up or down.
+        if (policy.universal_appeal !== undefined && policy.universal_appeal !== 0) {
+            prob += policy.universal_appeal;
+            prob = Math.max(0, Math.min(1, prob)); // Clamp to 0-1
+        }
 
         // Probabilistic vote sampling
         const vote = Math.random() < prob;

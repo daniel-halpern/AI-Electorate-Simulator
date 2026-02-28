@@ -39,6 +39,7 @@ export const policySchema = z.object({
   title: z.string(),
   description: z.string(),
   vector: ideologyVectorSchema, // The numerical center of this policy
+  universal_appeal: z.number().optional(), // Base shift for universally loved/hated troll policies
 });
 
 export type Policy = z.infer<typeof policySchema>;

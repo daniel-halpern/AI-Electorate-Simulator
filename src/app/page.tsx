@@ -10,23 +10,23 @@ import { useUser } from '@auth0/nextjs-auth0/client';
 
 // ── Design tokens (light mode) ──────────────────────────────────────────────
 const T = {
-  bg:         'hsl(40 20% 96%)',       // warm off-white page
-  bgSidebar:  'hsl(36 18% 91%)',       // slightly darker sidebar
-  bgCard:     'hsl(0 0% 100%)',        // pure white cards
-  bgInput:    'hsl(40 15% 97%)',       // near-white inputs
-  bgAccent:   'hsl(20 60% 94%)',       // faint terracotta tint
-  border:     'hsl(30 12% 82%)',       // warm grey border
-  borderStrong:'hsl(30 12% 68%)',
-  text:       'hsl(25 15% 12%)',       // warm near-black
-  textMuted:  'hsl(25 8% 45%)',        // mid-grey
-  textFaint:  'hsl(25 6% 62%)',        // light grey
-  accent:     'hsl(20 75% 42%)',       // terracotta/brick red
-  accentHover:'hsl(20 75% 36%)',
-  accentLight:'hsl(20 60% 94%)',
-  green:      'hsl(142 45% 36%)',
-  red:        'hsl(0 60% 48%)',
-  redLight:   'hsl(0 60% 96%)',
-  amber:      'hsl(38 80% 44%)',
+  bg: 'hsl(40 20% 96%)',       // warm off-white page
+  bgSidebar: 'hsl(36 18% 91%)',       // slightly darker sidebar
+  bgCard: 'hsl(0 0% 100%)',        // pure white cards
+  bgInput: 'hsl(40 15% 97%)',       // near-white inputs
+  bgAccent: 'hsl(20 60% 94%)',       // faint terracotta tint
+  border: 'hsl(30 12% 82%)',       // warm grey border
+  borderStrong: 'hsl(30 12% 68%)',
+  text: 'hsl(25 15% 12%)',       // warm near-black
+  textMuted: 'hsl(25 8% 45%)',        // mid-grey
+  textFaint: 'hsl(25 6% 62%)',        // light grey
+  accent: 'hsl(20 75% 42%)',       // terracotta/brick red
+  accentHover: 'hsl(20 75% 36%)',
+  accentLight: 'hsl(20 60% 94%)',
+  green: 'hsl(142 45% 36%)',
+  red: 'hsl(0 60% 48%)',
+  redLight: 'hsl(0 60% 96%)',
+  amber: 'hsl(38 80% 44%)',
 };
 
 export default function Home() {
@@ -137,7 +137,8 @@ export default function Home() {
     try {
       const vectorRes = await fetch("/api/vectorizePolicy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ policyText }) });
       const vectorData = await vectorRes.json(); if (vectorData.error) throw new Error(vectorData.error);
-      const policy: Policy = { title: "Simulation Proposal", description: policyText, vector: vectorData.vector };
+
+      const policy: Policy = { title: "Simulation Proposal", description: policyText, vector: vectorData.vector, universal_appeal: vectorData.universal_appeal };
       setResult(runSimulation(policy, citizens));
     } catch (err: any) { alert(err.message || "Simulation Failed"); }
     finally { setIsSimulating(false); }
@@ -448,12 +449,12 @@ export default function Home() {
 // ── Shared sub-components ────────────────────────────────────────────────────
 
 const T2 = {
-  text:       'hsl(25 15% 12%)',
-  textMuted:  'hsl(25 8% 45%)',
-  textFaint:  'hsl(25 6% 62%)',
-  accent:     'hsl(20 75% 42%)',
-  border:     'hsl(30 12% 82%)',
-  bgCard:     'hsl(0 0% 100%)',
+  text: 'hsl(25 15% 12%)',
+  textMuted: 'hsl(25 8% 45%)',
+  textFaint: 'hsl(25 6% 62%)',
+  accent: 'hsl(20 75% 42%)',
+  border: 'hsl(30 12% 82%)',
+  bgCard: 'hsl(0 0% 100%)',
 };
 
 function SectionLabel({ number, title, subtitle }: { number: string; title: string; subtitle: string }) {
