@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Citizen, Policy, SimulationResult } from "@/types/ideology";
 import { runSimulation } from "@/lib/simulation/vectorMath";
 import IdeologyScatter from "@/components/visualization/IdeologyScatter";
-import { Loader2, Users, Send, TrendingUp, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Users, Send, TrendingUp, CheckCircle, XCircle, Download, Upload, Trash2 } from "lucide-react";
 import { MOCK_CITIZENS } from "@/lib/simulation/mockData";
 
 export default function Home() {
@@ -50,6 +50,46 @@ export default function Home() {
     } finally {
       setIsGeneratingAgents(false);
     }
+  };
+
+  const handleResetElectorate = () => {
+    if (confirm("Are you sure you want to clear the entire electorate?")) {
+      setCitizens([]);
+      setResult(null);
+    }
+  };
+
+  const handleExportElectorate = () => {
+    if (citizens.length === 0) return;
+    const blob = new Blob([JSON.stringify(citizens, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `electorate_${citizens.length}_agents.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportElectorate = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedCitizens = JSON.parse(event.target?.result as string);
+        if (Array.isArray(importedCitizens) && importedCitizens.length > 0 && importedCitizens[0].ideology) {
+          setCitizens(importedCitizens);
+          setResult(null);
+        } else {
+          alert("Invalid electorate file format.");
+        }
+      } catch (err) {
+        alert("Failed to parse JSON file.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleSimulate = async (e: React.FormEvent) => {
@@ -117,6 +157,19 @@ export default function Home() {
                   <Users className="w-4 h-4 text-emerald-400" />
                   Electorate Size: <span className="text-white bg-slate-800 px-2 py-1 rounded">{citizens.length}</span>
                 </span>
+
+                <div className="flex gap-2">
+                  <button onClick={handleResetElectorate} className="p-2 bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded transition-colors" title="Clear Electorate">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleExportElectorate} disabled={citizens.length === 0} className="p-2 bg-slate-800 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 disabled:opacity-50 rounded transition-colors" title="Export to JSON">
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <label className="p-2 bg-slate-800 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 rounded transition-colors cursor-pointer" title="Import from JSON">
+                    <Upload className="w-4 h-4" />
+                    <input type="file" accept=".json" onChange={handleImportElectorate} className="hidden" />
+                  </label>
+                </div>
               </div>
               <button
                 onClick={handleGenerateAgents}

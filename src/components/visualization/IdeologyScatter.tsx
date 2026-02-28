@@ -16,12 +16,12 @@ const SUPPORT_COLOR = new THREE.Color("#10b981"); // Emerald 500
 const OPPOSE_COLOR = new THREE.Color("#ef4444"); // Red 500
 const NEUTRAL_COLOR = new THREE.Color("#64748b"); // Slate 500
 
-function Scene({ citizens, result, setHoveredCitizen }: { citizens: Citizen[], result?: SimulationResult, setHoveredCitizen: (c: any) => void }) {
+function Scene({ citizens, result, setHoveredCitizen, isPaused }: { citizens: Citizen[], result?: SimulationResult, setHoveredCitizen: (c: any) => void, isPaused: boolean }) {
     const groupRef = useRef<THREE.Group>(null);
 
     // Slowly rotate the entire scatter plot for a premium dynamic feel
     useFrame((state, delta) => {
-        if (groupRef.current) {
+        if (groupRef.current && !isPaused) {
             groupRef.current.rotation.y += delta * 0.1;
         }
     });
@@ -90,6 +90,7 @@ function Scene({ citizens, result, setHoveredCitizen }: { citizens: Citizen[], r
 
 export default function IdeologyScatter({ citizens, result }: Props) {
     const [hoveredNode, setHoveredNode] = useState<any>(null);
+    const [isPaused, setIsPaused] = useState(false);
 
     return (
         <div className="w-full h-full bg-slate-950/50 rounded-xl border border-slate-800 relative overflow-hidden backdrop-blur-sm shadow-2xl">
@@ -97,6 +98,13 @@ export default function IdeologyScatter({ citizens, result }: Props) {
                 3D Ideological Space
                 <div className="text-[10px] lowercase text-slate-600 mt-1">Left click to rotate. Scroll to zoom.</div>
             </div>
+
+            <button
+                onClick={() => setIsPaused(!isPaused)}
+                className="absolute bottom-4 right-4 z-20 px-3 py-1.5 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg text-xs font-bold tracking-widest text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+            >
+                {isPaused ? "▶ PLAY ROTATION" : "⏸ PAUSE ROTATION"}
+            </button>
 
             {/* Custom UI Tooltip overlaying the canvas */}
             {hoveredNode && (
@@ -144,7 +152,7 @@ export default function IdeologyScatter({ citizens, result }: Props) {
                 <directionalLight position={[10, 10, 5]} intensity={1} />
                 <pointLight position={[-10, -10, -10]} intensity={0.5} color="#475569" />
 
-                <Scene citizens={citizens} result={result} setHoveredCitizen={setHoveredNode} />
+                <Scene citizens={citizens} result={result} setHoveredCitizen={setHoveredNode} isPaused={isPaused} />
 
                 <OrbitControls
                     enableDamping
