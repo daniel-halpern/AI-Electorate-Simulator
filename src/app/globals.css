@@ -1,20 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;0,500;1,400&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-background: hsl(222.2 84% 4.9%);
-  --color-foreground: hsl(210 40% 98%);
+  --color-background: hsl(20 10% 5%);
+  --color-foreground: hsl(40 20% 92%);
 
-  --color-border: hsl(217.2 32.6% 17.5%);
-  --color-input: hsl(217.2 32.6% 17.5%);
-  --color-ring: hsl(224.3 76.3% 48%);
+  --color-border: hsl(30 8% 14%);
+  --color-input: hsl(30 8% 10%);
+  --color-ring: hsl(38 95% 55%);
 
-  --radius: 0.5rem;
+  --radius: 0.25rem;
+
+  --color-amber: hsl(38 95% 55%);
+  --color-amber-dim: hsl(38 60% 35%);
+  --color-surface: hsl(20 8% 8%);
+  --color-surface-2: hsl(20 8% 11%);
+  --color-muted: hsl(30 6% 40%);
 }
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    @apply font-sans antialiased;
+    font-family: 'Newsreader', Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(30 8% 20%);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(38 60% 35%);
+  }
+}
+
+/* Scanline texture overlay */
+@layer utilities {
+  .scanlines::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .font-mono-data {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .font-display {
+    font-family: 'Syne', sans-serif;
+  }
+
+  .label-xs {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .amber-glow {
+    box-shadow: 0 0 20px hsla(38, 95%, 55%, 0.1);
+  }
+
+  .border-amber-accent {
+    border-color: hsl(38 95% 55%);
+  }
+
+  .text-amber {
+    color: hsl(38 95% 55%);
+  }
+
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+
+  .bg-surface-2 {
+    background-color: var(--color-surface-2);
+  }
+
+  /* Diagonal hash pattern for empty states */
+  .hash-bg {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 4px,
+      rgba(255,255,255,0.015) 4px,
+      rgba(255,255,255,0.015) 8px
+    );
   }
 }
