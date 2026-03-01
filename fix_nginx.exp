@@ -1,0 +1,9 @@
+#!/usr/bin/expect -f
+set timeout -1
+set password "*dQ9hr]DzBbP#63#"
+
+spawn ssh root@66.42.115.151 "sed -i '/location \/ {/i \\        large_client_header_buffers 4 16k;\\n' /etc/nginx/sites-available/simulator && systemctl restart nginx"
+expect {
+    "*?assword:*" { send "$password\r"; exp_continue }
+    eof
+}

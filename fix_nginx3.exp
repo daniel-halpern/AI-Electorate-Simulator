@@ -1,0 +1,33 @@
+#!/usr/bin/expect -f
+set timeout -1
+set password "*dQ9hr]DzBbP#63#"
+
+spawn ssh root@66.42.115.151 "cat << 'INNEREOF' > /etc/nginx/sites-available/simulator
+server {
+    listen 80;
+    server_name 66.42.115.151;
+
+    client_header_buffer_size 64k;
+    large_client_header_buffers 4 64k;
+    client_body_buffer_size 128k;
+    
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_busy_buffers_size 256k;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+INNEREOF
+nginx -t && systemctl restart nginx
+"
+expect {
+    "*?assword:*" { send "$password\r"; exp_continue }
+    eof
+}

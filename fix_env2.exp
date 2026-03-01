@@ -1,0 +1,9 @@
+#!/usr/bin/expect -f
+set timeout -1
+set password "*dQ9hr]DzBbP#63#"
+
+spawn ssh root@66.42.115.151 "sed -i 's|APP_BASE_URL=.*|APP_BASE_URL=\"http://66.42.115.151\"|g' /root/AI-Electorate-Simulator/.env.local && pm2 restart simulator"
+expect {
+    "*?assword:*" { send "$password\r"; exp_continue }
+    eof
+}
