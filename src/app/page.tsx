@@ -8,6 +8,14 @@ import { Loader2, Users, TrendingUp, CheckCircle, XCircle, Download, Upload, Tra
 import { MOCK_CITIZENS } from "@/lib/simulation/mockData";
 import { useUser } from '@auth0/nextjs-auth0/client';
 import ChatModal from "@/components/chat/ChatModal";
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import dynamic from 'next/dynamic';
+import { Transaction, TransactionInstruction, PublicKey } from '@solana/web3.js';
+
+const WalletMultiButton = dynamic(
+  async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
+  { ssr: false }
+);
 
 // ── Design tokens (light mode) ──────────────────────────────────────────────
 const T = {
@@ -49,6 +57,38 @@ export default function Home() {
   const [isClustering, setIsClustering] = useState(false);
   const [factions, setFactions] = useState<{ clusterIndex: number, name: string, description: string }[]>([]);
   const [clusterAssignments, setClusterAssignments] = useState<{ citizenId: string, clusterIndex: number }[]>([]);
+
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
+  const [isRatifying, setIsRatifying] = useState(false);
+  const [ratifyTxHash, setRatifyTxHash] = useState<string | null>(null);
+
+  const [nativePhantomPubKey, setNativePhantomPubKey] = useState<string | null>(null);
+
+  const connectPhantomNative = async () => {
+    try {
+      const provider = (window as any).phantom?.solana;
+      if (!provider?.isPhantom) {
+        alert("Phantom Wallet is not installed or not active in this browser. Please install the extension.");
+        window.open("https://phantom.app/", "_blank");
+        return;
+      }
+      const resp = await provider.connect();
+      setNativePhantomPubKey(resp.publicKey.toString());
+    } catch (err: any) {
+      console.error("Phantom connect error:", err);
+      alert("Failed to connect natively: " + err.message);
+    }
+  };
+
+  const disconnectPhantomNative = () => {
+    try {
+      const provider = (window as any).phantom?.solana;
+      if (provider) provider.disconnect();
+    } catch (e) { }
+    setNativePhantomPubKey(null);
+  };
+
 
   useEffect(() => { setCitizens(MOCK_CITIZENS); }, []);
 
@@ -161,6 +201,41 @@ export default function Home() {
     finally { setIsSimulating(false); }
   };
 
+  const handleRatify = async () => {
+    const activePubKeyRaw = publicKey || (nativePhantomPubKey ? new PublicKey(nativePhantomPubKey) : null);
+    if (!activePubKeyRaw || !result || !result.passed) return;
+    setIsRatifying(true);
+    try {
+      const memoText = `[Vox PopulAI] Ratified: ${policyText.slice(0, 50)}... | Ayes: ${result.supportCount}, Nays: ${result.opposeCount}`;
+      const memoProgramId = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+      const instruction = new TransactionInstruction({
+        keys: [{ pubkey: activePubKeyRaw, isSigner: true, isWritable: true }],
+        programId: memoProgramId,
+        data: Buffer.from(memoText, 'utf-8'),
+      });
+      const transaction = new Transaction().add(instruction);
+
+      let signature;
+      if (publicKey && sendTransaction) {
+        signature = await sendTransaction(transaction, connection);
+      } else {
+        // Native fallback
+        const provider = (window as any).phantom?.solana;
+        if (!provider) throw new Error("Phantom provider not found for native sign");
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = activePubKeyRaw;
+        const signed = await provider.signTransaction(transaction);
+        signature = await connection.sendRawTransaction(signed.serialize());
+      }
+      setRatifyTxHash(signature);
+    } catch (err: any) {
+      alert(err.message || "Failed to ratify on Solana");
+    } finally {
+      setIsRatifying(false);
+    }
+  };
+
   const handleCluster = async () => {
     if (citizens.length < 10) { alert("Generate at least 10 citizens first."); return; }
     setIsClustering(true);
@@ -234,6 +309,26 @@ export default function Home() {
               >
                 <Database size={14} /> Global Macro-Analytics
               </a>
+
+              <div style={{ height: 1, background: T.border, margin: '4px 6px' }} />
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.18em', color: T.textFaint, textTransform: 'uppercase', marginBottom: 4, paddingLeft: 8, marginTop: 4 }}>Web3 Devnet</div>
+              {!nativePhantomPubKey ? (
+                <WalletMultiButton style={{ width: '100%', height: 32, padding: '0 10px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 4, color: T.text, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }} />
+              ) : null}
+
+              {!publicKey && !nativePhantomPubKey && (
+                <button onClick={connectPhantomNative} style={{ width: '100%', marginTop: 6, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: `1px dashed ${T.accent}`, borderRadius: 4, color: T.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = T.accentLight} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  Force Connect Phantom
+                </button>
+              )}
+              {nativePhantomPubKey && !publicKey && (
+                <div style={{ background: T.bgCard, border: `1px solid ${T.green}`, borderRadius: 4, padding: '6px 10px', marginTop: 4 }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: T.green, marginBottom: 2 }}>NATIVE FIREFOX BYPASS</div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nativePhantomPubKey.slice(0, 4)}...{nativePhantomPubKey.slice(-4)}</div>
+                  <button onClick={disconnectPhantomNative} style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 3, padding: '2px 6px', fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", marginTop: 4, cursor: 'pointer', width: '100%' }}>Disconnect</button>
+                </div>
+              )}
+
             </div>
           </section>
 
@@ -450,6 +545,24 @@ export default function Home() {
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 24, color: T.textFaint }}>{citizens.length - result.totalVotes}</span>
                 </MetricCard>
               </div>
+
+              {result.passed && (
+                <div style={{ marginTop: 12, padding: 16, background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <h4 style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, margin: '0 0 4px', color: T.text }}>On-Chain Ratification</h4>
+                    <p style={{ fontFamily: "'Newsreader', serif", fontSize: 13, color: T.textMuted, margin: 0 }}>Permanently etch this AI decision onto the Solana blockchain.</p>
+                  </div>
+                  {ratifyTxHash ? (
+                    <a href={`https://explorer.solana.com/tx/${ratifyTxHash}?cluster=devnet`} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 14px', background: T.green, color: 'white', borderRadius: 4, textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600 }}>View on Explorer</a>
+                  ) : (publicKey || nativePhantomPubKey) ? (
+                    <button onClick={handleRatify} disabled={isRatifying} style={{ padding: '8px 14px', background: T.accent, color: 'white', border: 'none', borderRadius: 4, cursor: isRatifying ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600, opacity: isRatifying ? 0.7 : 1 }}>
+                      {isRatifying ? "Ratifying..." : "Ratify on Solana"}
+                    </button>
+                  ) : (
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.textFaint }}>Connect wallet to ratify</div>
+                  )}
+                </div>
+              )}
             </section>
           )}
         </div>
