@@ -25,7 +25,7 @@ export default function ChatModal({ citizenData, policy, onClose }: ChatModalPro
         let text = "";
 
         if (!voteRecord) {
-            text = `Hi, I'm ${citizen.name}. I haven't made up my mind yet about the "${policy.title}" proposal. What do you want to ask me?`;
+            text = `Hi, I'm ${citizen.name}. I haven't made up my mind yet about the current proposal. What do you want to ask me?`;
         } else {
             let voteStr = "";
             if (!voteRecord.didVote) {
@@ -33,7 +33,7 @@ export default function ChatModal({ citizenData, policy, onClose }: ChatModalPro
             } else {
                 voteStr = voteRecord.vote ? "voted in favor of" : "opposed";
             }
-            text = `Hi, I'm ${citizen.name}. I ${voteStr} the "${policy.title}" proposal. What do you want to ask me?`;
+            text = `Hi, I'm ${citizen.name}. I ${voteStr} the current proposal. What do you want to ask me?`;
         }
 
         setMessages([{
