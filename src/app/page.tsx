@@ -10,7 +10,8 @@ import { useUser } from '@auth0/nextjs-auth0/client';
 import ChatModal from "@/components/chat/ChatModal";
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import dynamic from 'next/dynamic';
-import { Transaction, TransactionInstruction, PublicKey } from '@solana/web3.js';
+import { Transaction, TransactionInstruction, PublicKey, Keypair } from '@solana/web3.js';
+import bs58 from 'bs58';
 
 const WalletMultiButton = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -64,6 +65,7 @@ export default function Home() {
   const [ratifyTxHash, setRatifyTxHash] = useState<string | null>(null);
 
   const [nativePhantomPubKey, setNativePhantomPubKey] = useState<string | null>(null);
+  const [manualPrivateKey, setManualPrivateKey] = useState<string>("");
 
   const connectPhantomNative = async () => {
     try {
@@ -202,8 +204,22 @@ export default function Home() {
   };
 
   const handleRatify = async () => {
-    const activePubKeyRaw = publicKey || (nativePhantomPubKey ? new PublicKey(nativePhantomPubKey) : null);
+    let activePubKeyRaw = publicKey || (nativePhantomPubKey ? new PublicKey(nativePhantomPubKey) : null);
+    let manualKeypair: Keypair | null = null;
+
+    if (manualPrivateKey.trim()) {
+      try {
+        const secretKeyBytes = bs58.decode(manualPrivateKey.trim());
+        manualKeypair = Keypair.fromSecretKey(secretKeyBytes);
+        activePubKeyRaw = manualKeypair.publicKey;
+      } catch (e) {
+        alert("Invalid Base58 Private Key");
+        return;
+      }
+    }
+
     if (!activePubKeyRaw || !result || !result.passed) return;
+
     setIsRatifying(true);
     try {
       const memoText = `[Vox PopulAI] Ratified: ${policyText.slice(0, 50)}... | Ayes: ${result.supportCount}, Nays: ${result.opposeCount}`;
@@ -216,7 +232,13 @@ export default function Home() {
       const transaction = new Transaction().add(instruction);
 
       let signature;
-      if (publicKey && sendTransaction) {
+      if (manualKeypair) {
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = manualKeypair.publicKey;
+        transaction.sign(manualKeypair);
+        signature = await connection.sendRawTransaction(transaction.serialize());
+      } else if (publicKey && sendTransaction) {
         signature = await sendTransaction(transaction, connection);
       } else {
         // Native fallback
@@ -265,7 +287,7 @@ export default function Home() {
         <div style={{ padding: '18px 18px 14px', borderBottom: `1px solid ${T.border}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: T.accent }} />
-            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 13, letterSpacing: '0.04em', color: T.text }}>ELECTORATE SIM</span>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 13, letterSpacing: '0.04em', color: T.text }}>VOX POPULAI</span>
           </div>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.textFaint, letterSpacing: '0.08em' }}>AI · POLICY · ANALYSIS</span>
         </div>
@@ -328,6 +350,17 @@ export default function Home() {
                   <button onClick={disconnectPhantomNative} style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 3, padding: '2px 6px', fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", marginTop: 4, cursor: 'pointer', width: '100%' }}>Disconnect</button>
                 </div>
               )}
+
+              <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: '8px 10px', marginTop: 8 }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: T.textMuted, marginBottom: 4, letterSpacing: '0.05em' }}>MANUAL DEVNET KEY OVERRIDE</div>
+                <input
+                  type="password"
+                  placeholder="Paste Base58 Private Key"
+                  value={manualPrivateKey}
+                  onChange={(e) => setManualPrivateKey(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box', background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 3, padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.text, outline: 'none' }}
+                />
+              </div>
 
             </div>
           </section>
@@ -414,7 +447,7 @@ export default function Home() {
           {/* Header */}
           <header style={{ paddingBottom: 24, borderBottom: `1px solid ${T.border}` }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 8 }}>
-              <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 26, letterSpacing: '-0.02em', color: T.text, margin: 0 }}>Political Simulation Engine</h1>
+              <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 26, letterSpacing: '-0.02em', color: T.text, margin: 0 }}>Vox PopulAI</h1>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.accent, letterSpacing: '0.1em', border: `1px solid ${T.accent}66`, padding: '2px 7px', borderRadius: 2 }}>v2.1</span>
             </div>
             <p style={{ fontFamily: "'Newsreader', serif", fontStyle: 'italic', fontSize: 15, color: T.textMuted, margin: 0, lineHeight: 1.6 }}>
@@ -554,7 +587,7 @@ export default function Home() {
                   </div>
                   {ratifyTxHash ? (
                     <a href={`https://explorer.solana.com/tx/${ratifyTxHash}?cluster=devnet`} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 14px', background: T.green, color: 'white', borderRadius: 4, textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600 }}>View on Explorer</a>
-                  ) : (publicKey || nativePhantomPubKey) ? (
+                  ) : (publicKey || nativePhantomPubKey || manualPrivateKey.trim()) ? (
                     <button onClick={handleRatify} disabled={isRatifying} style={{ padding: '8px 14px', background: T.accent, color: 'white', border: 'none', borderRadius: 4, cursor: isRatifying ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, fontWeight: 600, opacity: isRatifying ? 0.7 : 1 }}>
                       {isRatifying ? "Ratifying..." : "Ratify on Solana"}
                     </button>

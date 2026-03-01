@@ -1,0 +1,17 @@
+#!/usr/bin/expect -f
+set timeout -1
+set password "*dQ9hr]DzBbP#63#"
+
+spawn rsync -avz package.json package-lock.json src root@66.42.115.151:/root/AI-Electorate-Simulator/
+expect {
+    "*?assword:*" { send "$password\r"; exp_continue }
+    eof
+}
+
+wait
+spawn ssh root@66.42.115.151 "cd /root/AI-Electorate-Simulator && npm install bs58 && npm run build && pm2 restart simulator"
+expect {
+    "*?assword:*" { send "$password\r"; exp_continue }
+    eof
+}
+wait
