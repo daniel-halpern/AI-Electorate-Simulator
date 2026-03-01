@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Citizen, Policy, SimulationResult } from "@/types/ideology";
 import { runSimulation } from "@/lib/simulation/vectorMath";
 import IdeologyScatter from "@/components/visualization/IdeologyScatter";
-import { Loader2, Users, TrendingUp, CheckCircle, XCircle, Download, Upload, Trash2, Cloud, CloudDownload, LogOut, LogIn } from "lucide-react";
+import { Loader2, Users, TrendingUp, CheckCircle, XCircle, Download, Upload, Trash2, Cloud, CloudDownload, LogOut, LogIn, Database } from "lucide-react";
 import { MOCK_CITIZENS } from "@/lib/simulation/mockData";
 import { useUser } from '@auth0/nextjs-auth0/client';
 import ChatModal from "@/components/chat/ChatModal";
@@ -142,7 +142,21 @@ export default function Home() {
       const vectorData = await vectorRes.json(); if (vectorData.error) throw new Error(vectorData.error);
 
       const policy: Policy = { title: "Simulation Proposal", description: policyText, vector: vectorData.vector, universal_appeal: vectorData.universal_appeal };
-      setResult(runSimulation(policy, citizens));
+      const simResult = runSimulation(policy, citizens);
+      setResult(simResult);
+
+      fetch("/api/snowflake/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          policyText: policy.description,
+          ayes: simResult.supportCount,
+          nays: simResult.opposeCount,
+          abstains: citizens.length - simResult.totalVotes,
+          turnoutPercentage: (simResult.totalVotes / citizens.length) * 100,
+        })
+      }).catch(err => console.error("Snowflake Analytics Logging Failed:", err));
+
     } catch (err: any) { alert(err.message || "Simulation Failed"); }
     finally { setIsSimulating(false); }
   };
@@ -211,6 +225,15 @@ export default function Home() {
               >
                 <Download size={14} /> Export JSON
               </button>
+
+              <div style={{ height: 1, background: T.border, margin: '4px 6px' }} />
+
+              <a href="/global-stats"
+                style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '7px 10px', background: T.accent + '22', textDecoration: 'none', borderRadius: 4, cursor: 'pointer', color: T.accent, fontFamily: "'Newsreader', serif", fontSize: 13, textAlign: 'left', transition: 'background 0.12s' }}
+                {...hoverBg(T.accent + '44')}
+              >
+                <Database size={14} /> Global Macro-Analytics
+              </a>
             </div>
           </section>
 
