@@ -2,6 +2,17 @@
 
 **A 6-dimensional AI electorate simulation engine that predicts voter behavior.**
 
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=threedotjs&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Snowflake](https://img.shields.io/badge/Snowflake-29B5E8?style=for-the-badge&logo=snowflake&logoColor=white)
+![Solana](https://img.shields.io/badge/Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white)
+![Auth0](https://img.shields.io/badge/Auth0-EB5424?style=for-the-badge&logo=auth0&logoColor=white)
+![Vultr](https://img.shields.io/badge/Vultr-007BFC?style=for-the-badge&logo=vultr&logoColor=white)
+
 <!-- Replace YOUR_VIDEO_ID with your actual YouTube video ID -->
 <!-- [![Watch the video](https://img.youtube.com/vi/YOUR_VIDEO_ID/hqdefault.jpg)](https://youtu.be/YOUR_VIDEO_ID) -->
 <!-- *< click image to watch our demo video!* -->
@@ -15,12 +26,12 @@ I was inspired by the idea of applying deterministic mathematics to qualitative 
 
 ## What It Does
 
-In standard polling, a voter is often reduced to a single label like "Conservative" or "Liberal." In this model, every citizen is treated as a unique point in a 6-dimensional space. By assigning 6 independent numerical scores (an "ideological fingerprint") to every person — spanning Economic, Social, Environmental, Authority, Collectivism, and Risk — the engine can simulate complex internal contradictions, such as a voter who is economically conservative but socially progressive. This allows for a level of predictive nuance that a simple 1D or 2D model cannot capture.
+In standard polling, a voter is often reduced to a single label like "Conservative" or "Liberal." In this model, every citizen is treated as a unique point in a 6-dimensional space. By assigning 6 independent numerical scores (an "ideological fingerprint") to every person, spanning Economic, Social, Environmental, Authority, Collectivism, and Risk, the engine can simulate complex internal contradictions, such as a voter who is economically conservative but socially progressive. This allows for a level of predictive nuance that a simple 1D or 2D model cannot capture.
 
 ![Main Dashboard](readme_images/dashboard.png)
 *The main Vox PopulAI dashboard showing the policy input, simulation controls, and 3D ideological scatter plot.*
 
-You describe who lives in your target population — be it union workers, college students, or retirees — and **Gemini** generates hundreds of unique AI citizens, each with their own fingerprint. Once your electorate exists, you propose a policy. The engine instantly calculates how every single citizen would vote based on their mathematical proximity to the policy's ideological footprint, or whether they'd even bother showing up to the polls.
+You describe who lives in your target population, be it union workers, college students, or retirees, and **Gemini** generates hundreds of unique AI citizens, each with their own fingerprint. Once your electorate exists, you propose a policy. The engine instantly calculates how every single citizen would vote based on their mathematical proximity to the policy's ideological footprint, or whether they'd even bother showing up to the polls.
 
 ![Simulation Results](readme_images/results.png)
 *Simulation results showing the vote outcome, turnout percentage, and breakdown of ayes, nays, and abstentions.*
@@ -81,7 +92,7 @@ The thing I'm most proud of is that the simulator is genuinely fun to use. The m
 
 It was also surprising to non-policy decisions. When I typed "Elect Donald Trump" into the policy field, the simulation returned over 50% support, lining up with the fact that he won the U.S. popular vote in 2024. I didn't hardcode that. The 6D math and the Gemini-generated electorate arrived at that conclusion independently. Similarly, I was able to ask if people would flip the switch in the trolley problem, and was able to extract meaningful results.
 
-That moment — where a mathematical model I built from scratch reproduced a real-world electoral outcome on its own — was the most satisfying part of the entire project.
+That moment, where a mathematical model I built from scratch reproduced a real-world electoral outcome on its own, was the most satisfying part of the entire project.
 
 I'm also proud of how the K-Means cluster discovery turned out. I didn't predefine any political parties. The system generates citizens with raw numerical fingerprints, and the clustering algorithm independently discovers which groups naturally align across all 6 dimensions. Gemini then names and describes those factions based purely on their mathematical centroid. The result is a unique, emergent political landscape every time. A simulation of Ohio factory workers produces completely different factions than one of Bay Area tech workers, and both feel surprisingly plausible.
 
