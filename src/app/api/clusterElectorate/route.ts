@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { kmeans } from "ml-kmeans";
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { OpenAI } from "openai";
 import { Citizen } from "@/types/ideology";
 
 export const maxDuration = 60; // seconds
@@ -13,8 +13,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Electorate cannot be empty" }, { status: 400 });
         }
 
-        if (!process.env.GEMINI_API_KEY) {
-            return NextResponse.json({ error: "Missing GEMINI_API_KEY" }, { status: 500 });
+        if (!process.env.OPENAI_API_KEY) {
+            return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 500 });
         }
 
         // 1. Prepare data for K-Means (Extract the 6D Vectors)
@@ -42,30 +42,16 @@ export async function POST(req: Request) {
         }));
 
         // 3. Send the raw Centroid Math to AI to invent real Political Faction Names
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-        const factionListSchema: Schema = {
-            type: Type.OBJECT,
-            properties: {
-                factions: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            clusterIndex: { type: Type.NUMBER },
-                            name: { type: Type.STRING },
-                            description: { type: Type.STRING, description: "A 1-sentence description of what this political faction believes based on their ideological center." }
-                        },
-                        required: ["clusterIndex", "name", "description"]
-                    }
-                }
-            },
-            required: ["factions"]
-        };
-
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: `You are an expert political analyst. I have run a K-Means clustering algorithm on a simulated electorate across a 6D ideological space.
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            temperature: 0.7,
+            response_format: { type: "json_object" },
+            messages: [
+                {
+                    role: "user",
+                    content: `You are an expert political analyst. I have run a K-Means clustering algorithm on a simulated electorate across a 6D ideological space.
 Here is the mathematical center (centroid) for each of the ${k} discovered factions:
 ${centroids.map((centroid, i) => `
 Faction ${i}:
@@ -77,16 +63,24 @@ Faction ${i}:
 - Risk Tolerance (0 Averse to 1 Tolerant): ${centroid[5].toFixed(2)}
 `).join("\n")}
 
-Invent a realistic, immersive political party name and description for each mathematical centroid. Ensure the clusterIndex matches the Faction number.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: factionListSchema,
-                temperature: 0.7,
-            }
+Invent a realistic, immersive political party name and description for each mathematical centroid. Ensure the clusterIndex matches the Faction number.
+
+Return JSON with this structure:
+{
+  "factions": [
+    {
+      "clusterIndex": number,
+      "name": "string",
+      "description": "string - A 1-sentence description of what this political faction believes based on their ideological center."
+    }
+  ]
+}`
+                }
+            ]
         });
 
-        const resultText = response.text;
-        if (!resultText) throw new Error("Gemini returned empty text for factions");
+        const resultText = response.choices[0].message.content;
+        if (!resultText) throw new Error("OpenAI returned empty text for factions");
 
         const factionData = JSON.parse(resultText);
 
@@ -98,7 +92,7 @@ Invent a realistic, immersive political party name and description for each math
     } catch (error: any) {
         console.error("Clustering error:", error);
         if (error?.status === 429 || error?.message?.includes("429") || error?.message?.includes("Quota exceeded")) {
-            return NextResponse.json({ error: "Gemini Free Tier limit reached. Wait 60s." }, { status: 429 });
+            return NextResponse.json({ error: "OpenAI rate limit reached." }, { status: 429 });
         }
         return NextResponse.json({ error: "Failed to cluster electorate" }, { status: 500 });
     }

@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { OpenAI } from "openai";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 60; // seconds
@@ -7,14 +7,14 @@ export async function POST(req: Request) {
     try {
         const { message, citizen, policyText, history = [] } = await req.json();
 
-        if (!process.env.GEMINI_API_KEY) {
+        if (!process.env.OPENAI_API_KEY) {
             return NextResponse.json(
-                { error: "Missing GEMINI_API_KEY environment variable." },
+                { error: "Missing OPENAI_API_KEY environment variable." },
                 { status: 500 }
             );
         }
 
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         // Identify their vote and map it to text
         let voteStr = "";

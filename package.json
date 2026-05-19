@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.15.0",
-    "@google/genai": "^1.43.0",
+    "openai": "^4.52.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@solana/wallet-adapter-react": "^0.15.39",

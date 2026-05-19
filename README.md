@@ -135,7 +135,7 @@ npm run dev
 
 Configure your `.env.local` with the required API keys:
 ```
-GEMINI_API_KEY=
+OPENAI_API_KEY=
 MONGODB_URI=
 AUTH0_SECRET=
 AUTH0_DOMAIN=

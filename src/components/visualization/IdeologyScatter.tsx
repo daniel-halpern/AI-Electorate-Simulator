@@ -123,7 +123,7 @@ export default function IdeologyScatter({ citizens, result, clusterAssignments, 
     }
 
     return (
-        <div className="w-full h-full bg-slate-950/50 rounded-xl border border-slate-800 relative overflow-hidden backdrop-blur-sm shadow-2xl">
+        <div style={{ width: '100%', height: '100%', position: 'relative', backgroundColor: '#020617', display: 'flex', flexDirection: 'column' }}>
             <div className="absolute top-4 left-4 text-xs text-slate-500 font-medium tracking-widest uppercase z-10">
                 3D Ideological Space
                 <div className="text-[10px] lowercase text-slate-600 mt-1">Left click to rotate. Scroll to zoom.</div>
@@ -194,7 +194,11 @@ export default function IdeologyScatter({ citizens, result, clusterAssignments, 
                 </div>
             )}
 
-            <Canvas camera={{ position: [8, 8, 12], fov: 50 }} className="cursor-crosshair w-full h-full">
+            <Canvas 
+                camera={{ position: [8, 8, 12], fov: 50 }} 
+                style={{ width: '100%', height: '100%' }}
+                gl={{ antialias: true, alpha: false }}
+            >
                 <color attach="background" args={["#020617"]} /> {/* slate-950 */}
                 <ambientLight intensity={0.5} />
                 <directionalLight position={[10, 10, 5]} intensity={1} />

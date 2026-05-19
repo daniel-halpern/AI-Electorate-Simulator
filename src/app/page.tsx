@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Citizen, Policy, SimulationResult } from "@/types/ideology";
 import { runSimulation } from "@/lib/simulation/vectorMath";
-import IdeologyScatter from "@/components/visualization/IdeologyScatter";
+const IdeologyScatter = dynamic(() => import('@/components/visualization/IdeologyScatter'), { ssr: false });
 import { Loader2, Users, TrendingUp, CheckCircle, XCircle, Download, Upload, Trash2, Cloud, CloudDownload, LogOut, LogIn, Database } from "lucide-react";
 import { MOCK_CITIZENS } from "@/lib/simulation/mockData";
 import { useUser } from '@auth0/nextjs-auth0/client';

@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { OpenAI } from "openai";
 import { NextResponse } from "next/server";
 import { ideologyVectorSchema } from "@/types/ideology";
 
@@ -16,86 +16,50 @@ export async function POST(req: Request) {
             );
         }
 
-        if (!process.env.GEMINI_API_KEY) {
+        if (!process.env.OPENAI_API_KEY) {
             return NextResponse.json(
-                { error: "Missing GEMINI_API_KEY environment variable. Local development: use mock data." },
+                { error: "Missing OPENAI_API_KEY environment variable. Local development: use mock data." },
                 { status: 500 }
             );
         }
 
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-        // Ensure Gemini returns EXACTLY the 6D vector structure PLUS a universal appeal score
-        const geminiOutputSchema: Schema = {
-            type: Type.OBJECT,
-            properties: {
-                universal_appeal: {
-                    type: Type.NUMBER,
-                    description: "Float from -1.0 to 1.0. Represents the non-ideological base appeal of the proposal. Normal debatable political issues should be 0.0. Universally loved/beneficial concepts (e.g. 'save all puppies') should be up to 1.0. Universally hated, horrific, or absurd troll concepts (e.g. 'kill everyone', 'make me king') should be down to -1.0."
-                },
-                vector: {
-                    type: Type.OBJECT,
-                    description: "The 6-dimensional ideological vector mapping of the policy.",
-                    properties: {
-                        economic: {
-                            type: Type.NUMBER,
-                            description: "Float from -1 (Left/Socialist/Regulated) to 1 (Right/Capitalist/Free-Market)"
-                        },
-                        social: {
-                            type: Type.NUMBER,
-                            description: "Float from -1 (Progressive/Egalitarian) to 1 (Conservative/Traditionalist)"
-                        },
-                        environmental: {
-                            type: Type.NUMBER,
-                            description: "Float from 0 (Exploitative/Industrial) to 1 (Conservationist/Eco-friendly)"
-                        },
-                        authority_preference: {
-                            type: Type.NUMBER,
-                            description: "Float from 0 (Libertarian/Anarchic/Decentralized) to 1 (Authoritarian/Statist/Centralized)"
-                        },
-                        collectivism: {
-                            type: Type.NUMBER,
-                            description: "Float from 0 (Individualist/Self-reliance) to 1 (Collectivist/Community-focused)"
-                        },
-                        risk_tolerance: {
-                            type: Type.NUMBER,
-                            description: "Float from 0 (Risk Averse/Precautionary) to 1 (Risk Tolerant/Techno-optimist)"
-                        }
-                    },
-                    required: [
-                        "economic",
-                        "social",
-                        "environmental",
-                        "authority_preference",
-                        "collectivism",
-                        "risk_tolerance"
-                    ]
-                }
-            },
-            required: [
-                "universal_appeal",
-                "vector"
-            ]
-        };
-
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: `You are a sophisticated political science simulation engine. 
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            temperature: 0.1, // Low temperature for consistent deterministic scoring
+            response_format: { type: "json_object" },
+            messages: [
+                {
+                    role: "user",
+                    content: `You are a sophisticated political science simulation engine. 
 First, evaluate if the following policy proposal is a valid, debatable political concept, or if it is purely trolling, spam, physically impossible, or overtly unconstitutional/illegal nonsense (like "nuke the moon" or "make the president a dictator").
 If it is invalid, set 'isValid' to false, populate 'rejectionReason', and fill the vectors with 0. 
 If it is valid, set 'isValid' to true, leave 'rejectionReason' empty, and map it exactly into the specified 6-dimensional ideological vector space.
       
-      Policy Proposal: "${policyText}"`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: geminiOutputSchema,
-                temperature: 0.1, // Low temperature for consistent deterministic scoring
-            }
+Policy Proposal: "${policyText}"
+
+Return JSON with this exact structure:
+{
+  "isValid": boolean,
+  "rejectionReason": "string or empty if valid",
+  "universal_appeal": number (float from -1.0 to 1.0),
+  "vector": {
+    "economic": number (float from -1 to 1, where -1 is Left/Socialist/Regulated and 1 is Right/Capitalist/Free-Market),
+    "social": number (float from -1 to 1, where -1 is Progressive/Egalitarian and 1 is Conservative/Traditionalist),
+    "environmental": number (float from 0 to 1, where 0 is Exploitative/Industrial and 1 is Conservationist/Eco-friendly),
+    "authority_preference": number (float from 0 to 1, where 0 is Libertarian/Anarchic/Decentralized and 1 is Authoritarian/Statist/Centralized),
+    "collectivism": number (float from 0 to 1, where 0 is Individualist/Self-reliance and 1 is Collectivist/Community-focused),
+    "risk_tolerance": number (float from 0 to 1, where 0 is Risk Averse/Precautionary and 1 is Risk Tolerant/Techno-optimist)
+  }
+}`
+                }
+            ]
         });
 
-        const resultText = response.text;
+        const resultText = response.choices[0].message.content;
         if (!resultText) {
-            throw new Error("No text returned from Gemini");
+            throw new Error("No text returned from OpenAI");
         }
 
         // Parse the JSON. We use Zod to validate the structured output

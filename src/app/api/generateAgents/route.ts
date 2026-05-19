@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { OpenAI } from "openai";
 import { NextResponse } from "next/server";
 import { citizensListSchema } from "@/types/ideology";
 
@@ -8,57 +8,24 @@ export async function POST(req: Request) {
     try {
         const { count = 50, demographics = "" } = await req.json();
 
-        if (!process.env.GEMINI_API_KEY) {
+        if (!process.env.OPENAI_API_KEY) {
             return NextResponse.json(
-                { error: "Missing GEMINI_API_KEY environment variable. Local development: use mock data." },
+                { error: "Missing OPENAI_API_KEY environment variable. Local development: use mock data." },
                 { status: 500 }
             );
         }
 
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-        // Ensure Gemini returns EXACTLY the Citizen array structure
-        const citizenListGenSchema: Schema = {
-            type: Type.OBJECT,
-            properties: {
-                citizens: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            id: { type: Type.STRING },
-                            name: { type: Type.STRING },
-                            age: { type: Type.NUMBER },
-                            gender: { type: Type.STRING },
-                            job: { type: Type.STRING, description: "A realistic occupation based on their age and demographics" },
-                            worldview: {
-                                type: Type.STRING,
-                                description: "A short, one-sentence narrative explaining their core beliefs."
-                            },
-                            ideology: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    economic: { type: Type.NUMBER },
-                                    social: { type: Type.NUMBER },
-                                    environmental: { type: Type.NUMBER },
-                                    authority_preference: { type: Type.NUMBER },
-                                    collectivism: { type: Type.NUMBER },
-                                    risk_tolerance: { type: Type.NUMBER }
-                                },
-                                required: ["economic", "social", "environmental", "authority_preference", "collectivism", "risk_tolerance"]
-                            }
-                        },
-                        required: ["id", "name", "age", "gender", "job", "worldview", "ideology"]
-                    }
-                }
-            },
-            required: ["citizens"]
-        };
-
-        // Generate in a single request to avoid 429 Too Many Requests on Free Tier
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: `You are a sophisticated political science demographic model. Generate exactly ${count} distinct, highly realistic citizen personas for a governance simulation.
+        // Generate in a single request
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            temperature: 0.7, // Higher temp for better variance/blob shape
+            response_format: { type: "json_object" },
+            messages: [
+                {
+                    role: "user",
+                    content: `You are a sophisticated political science demographic model. Generate exactly ${count} distinct, highly realistic citizen personas for a governance simulation.
 
 ${demographics ? `CRITICAL CONTEXT - THE USER UPLOADED THIS DEMOGRAPHIC DATA:\n"""\n${demographics}\n"""\nYour generated electorate MUST accurately reflect these demographic statistics. Adjust the ages, genders, jobs, and ideological vectors to strictly map to the demographics provided above.` : 'Make sure to cover the absolute extremes of the political spectrum as well as the moderate center.'}
 
@@ -71,17 +38,36 @@ CRITICAL RULES FOR 6D IDEOLOGY VECTORS:
    - Authority: 0.0 is Libertarian/Freedom. 1.0 is Authoritarian/Statist.
    - Collectivism: 0.0 is Individualist. 1.0 is Collectivist.
    - Risk: 0.0 is Risk Averse. 1.0 is Risk Tolerant.
-3. NUMERICAL BOUNDS: Economic/Social must be strictly between -1.0 and 1.0. All others strictly between 0.0 and 1.0.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: citizenListGenSchema,
-                temperature: 0.7, // Higher temp for better variance/blob shape
-            }
+3. NUMERICAL BOUNDS: Economic/Social must be strictly between -1.0 and 1.0. All others strictly between 0.0 and 1.0.
+
+Return the response as JSON with this exact structure:
+{
+  "citizens": [
+    {
+      "id": "uuid-string",
+      "name": "string",
+      "age": number,
+      "gender": "string",
+      "job": "string",
+      "worldview": "string",
+      "ideology": {
+        "economic": number,
+        "social": number,
+        "environmental": number,
+        "authority_preference": number,
+        "collectivism": number,
+        "risk_tolerance": number
+      }
+    }
+  ]
+}`
+                }
+            ]
         });
 
-        const resultText = response.text;
+        const resultText = response.choices[0].message.content;
         if (!resultText) {
-            throw new Error("No text returned from Gemini");
+            throw new Error("No text returned from OpenAI");
         }
 
         const rawData = JSON.parse(resultText);
