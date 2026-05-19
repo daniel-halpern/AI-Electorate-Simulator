@@ -33,9 +33,9 @@ export async function POST(req: Request) {
                 {
                     role: "user",
                     content: `You are a sophisticated political science simulation engine. 
-First, evaluate if the following policy proposal is a valid, debatable political concept, or if it is purely trolling, spam, physically impossible, or overtly unconstitutional/illegal nonsense (like "nuke the moon" or "make the president a dictator").
-If it is invalid, set 'isValid' to false, populate 'rejectionReason', and fill the vectors with 0. 
-If it is valid, set 'isValid' to true, leave 'rejectionReason' empty, and map it exactly into the specified 6-dimensional ideological vector space.
+First, evaluate if the following proposal is a valid political concept, election, historical hypothetical, or public figure. Treat elections or public figures as valid proposals representing their political platforms. Only reject if it is purely trolling, spam, or absolute nonsense (like "nuke the moon" or "make a dog the president").
+If it is invalid, set 'isValid' to false, populate 'rejectionReason', set 'universal_appeal' to an appropriate score (-1.0 for universally hated things like killing everyone, 1.0 for universally loved things like not killing everyone or saving puppies), and fill the vectors with 0. 
+If it is valid, set 'isValid' to true, leave 'rejectionReason' empty, evaluate 'universal_appeal', and map it exactly into the specified 6-dimensional ideological vector space.
       
 Policy Proposal: "${policyText}"
 
@@ -64,10 +64,10 @@ Return JSON with this exact structure:
 
         // Parse the JSON. We use Zod to validate the structured output
         const rawOutput = JSON.parse(resultText);
-        const validatedVector = ideologyVectorSchema.parse(rawOutput.vector);
+        
+        let universal_appeal = rawOutput.universal_appeal ?? 0.0;
 
-        // Default to 0.0 (normal ideological voting) if missing
-        const universal_appeal = rawOutput.universal_appeal ?? 0.0;
+        const validatedVector = ideologyVectorSchema.parse(rawOutput.vector);
 
         return NextResponse.json({ vector: validatedVector, universal_appeal });
 

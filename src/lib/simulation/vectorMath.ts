@@ -25,7 +25,7 @@ export function euclideanDistance(a: IdeologyVector, b: IdeologyVector): number 
 
 // 2. Voting Probability
 // supportProbability = sigmoid(-alpha * distance)
-export function calculateSupportProbability(distance: number, alpha: number = 2.5, inflectionPoint: number = 1.6): number {
+export function calculateSupportProbability(distance: number, alpha: number = 2.5, inflectionPoint: number = 1.45): number {
     // In a 6D space where most axes are [-1, 1] or [0, 1],
     // The maximum possible distance is roughly ~3.46.
     // The average distance between two random points is around ~1.2 to 1.5.
@@ -34,7 +34,7 @@ export function calculateSupportProbability(distance: number, alpha: number = 2.
     // If distance is near 0, probability should be very near 100%.
     // If distance is around the average (1.2), they should be somewhat neutral but leaning "no".
 
-    // We set the inflection point (exactly 50% chance of voting yes/no) to 1.6.
+    // We set the inflection point (exactly 50% chance of voting yes/no) to 1.45.
     // This allows universally good policies to naturally gain a super-majority.
     const x = -alpha * (distance - inflectionPoint);
     return 1 / (1 + Math.exp(-x));
@@ -45,7 +45,7 @@ export function calculateSupportProbability(distance: number, alpha: number = 2.
 // the more likely you are to actually get off the couch and vote.
 // A person who fiercely loves (distance ~ 0) or fiercely hates (distance ~ 3) will vote.
 // A person who feels "meh" (distance ~ 1.6) might just stay home.
-export function calculateTurnoutProbability(distance: number, inflectionPoint: number = 1.6): number {
+export function calculateTurnoutProbability(distance: number, inflectionPoint: number = 1.45): number {
     // Distance from the indifference point. 
     // At exactly the inflection point, diff is 0. 
     // At max love (0), diff is 1.6. At max hate (3.4), diff is 1.8.
@@ -69,7 +69,7 @@ export function calculateTurnoutProbability(distance: number, inflectionPoint: n
 export function runSimulation(policy: Policy, electorate: Citizen[]): SimulationResult {
     let supportCount = 0;
     let opposeCount = 0;
-    const inflectionPoint = 1.6;
+    const inflectionPoint = 1.45;
 
     const votes = electorate.map(citizen => {
         const dist = euclideanDistance(citizen.ideology, policy.vector);

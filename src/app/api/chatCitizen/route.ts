@@ -64,29 +64,31 @@ ${instructionsStr}
 3. If the user argues with you, respond naturally. Become defensive, persuaded, or angry depending on how they talk to you and how extreme your ideological numbers are.
 4. Keep your responses concise, punchy, and conversational (under 3 sentences usually).`;
 
-        // Format history for Gemini
-        const formattedHistory = history.map((msg: any) => ({
-            role: msg.role === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.text }]
+        // Format history for OpenAI
+        const formattedHistory: any[] = history.map((msg: any) => ({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.text
         }));
 
         // Append the new user message
         formattedHistory.push({
             role: 'user',
-            parts: [{ text: message }]
+            content: message
+        });
+        
+        // Prepend system prompt
+        formattedHistory.unshift({
+            role: 'system',
+            content: systemPrompt
         });
 
-        // Insert system instruction into the config
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: formattedHistory,
-            config: {
-                systemInstruction: systemPrompt,
-                temperature: 0.8, // Allow for personality variance
-            }
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: formattedHistory,
+            temperature: 0.8,
         });
 
-        const reply = response.text;
+        const reply = response.choices[0].message.content;
 
         return NextResponse.json({ reply });
 
